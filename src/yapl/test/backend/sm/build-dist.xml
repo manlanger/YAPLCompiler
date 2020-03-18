@@ -5,7 +5,7 @@ M. Taschwer, March 2016
 	</description>
 	
     <!-- customize to your environment -->
-	<property name="globalbasedir" location="../../../../.."/>
+	<property name="globalbasedir" location="C:/Users/Manuel/Desktop/Uni/Eclipse/YAPLCompiler"/>
 	<property name="src" location="${globalbasedir}/src"/>
 	<property name="build" location="${globalbasedir}/ant-bin"/>
     <property name="ant-contrib-jar" location="${globalbasedir}/lib/ant-contrib.jar"/>
