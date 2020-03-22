@@ -13,7 +13,7 @@ M. Taschwer, March 2016
     
     <!-- list of Java test classes -->
     <!--<property name="testclasses" value="Test1,Test2,Test3,Test4,Test5,Test6"/> -->
-	<property name="testclasses" value="Test1"/>
+	<property name="testclasses" value="Test1,Test2"/>
     
     <!-- properties for invoking 'eval' target directly -->
     <property name="mainclass" value="yapl.test.backend.sm.Test1"/>

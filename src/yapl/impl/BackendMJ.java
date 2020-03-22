@@ -18,8 +18,8 @@ public class BackendMJ implements BackendBinSM {
 	private IntBuffer data;
 	private Integer startPC;
 	private Integer dataSize;
-	private Map<String, Integer> enterPosition;
-	private Map<String, Integer> exitPosition;
+	private Map<String, Short> enterPosition;
+	private Map<String, Short> exitPosition;
 	
 	public BackendMJ() {
 		code = ByteBuffer.allocate(100);
@@ -28,8 +28,8 @@ public class BackendMJ implements BackendBinSM {
 		startPC = 0;
 		dataSize = 0;
 		
-		enterPosition = new HashMap<String, Integer>();
-		exitPosition = new HashMap<String, Integer>();
+		enterPosition = new HashMap<String, Short>();
+		exitPosition = new HashMap<String, Short>();
 	}
 	
 	@Override
@@ -143,14 +143,21 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public void loadConst(int value) {
-		// TODO Auto-generated method stub
-
+		code.put(ICode.CONST);
+		
+		Integer val = value;
+		
+		code.putInt(val.byteValue());
 	}
 
 	@Override
 	public void loadWord(MemoryRegion region, int offset) {
-		// TODO Auto-generated method stub
-
+		if (region == MemoryRegion.STACK) {
+			code.put(ICode.LOAD);
+			
+			Integer off = offset;
+			code.put(off.byteValue());
+		}
 	}
 
 	@Override
@@ -179,8 +186,8 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public void writeInteger() {
-		// TODO Auto-generated method stub
-
+		code.put(ICode.CONST0);
+		code.put(ICode.PRINT);
 	}
 
 	@Override
@@ -282,8 +289,11 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public void callProc(String label) {
-		// TODO Auto-generated method stub
-
+		code.put(ICode.CALL);
+		
+		Short pos = enterPosition.get(label);
+		
+		code.putShort(pos.byteValue());
 	}
 
 	@Override
@@ -292,7 +302,7 @@ public class BackendMJ implements BackendBinSM {
 			startPC = code.position();
 		}
 		
-		enterPosition.put(label, code.position());
+		enterPosition.put(label, (short)code.position());
 		
 		Integer params = nParams;
 		
@@ -303,7 +313,7 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public void exitProc(String label) {
-		exitPosition.put(label, code.position());
+		exitPosition.put(label, (short)code.position());
 
 		code.put(ICode.EXIT);
 		code.put(ICode.RETURN);
@@ -311,8 +321,7 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public int paramOffset(int index) {
-		// TODO Auto-generated method stub
-		return 0;
+		return index;
 	}
 
 }
