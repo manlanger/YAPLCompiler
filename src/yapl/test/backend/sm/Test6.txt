@@ -1,1 +1,1 @@
--- corrupted object file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\src\yapl\test\backend\sm\Test6.mj: wrong marker
+-- error reading file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\src\yapl\test\backend\sm\Test6.mj

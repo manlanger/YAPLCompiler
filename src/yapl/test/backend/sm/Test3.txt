@@ -1,1 +1,2 @@
--- corrupted object file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\src\yapl\test\backend\sm\Test3.mj: wrong marker
+
+-- exception at address 0: wrong opcode 0

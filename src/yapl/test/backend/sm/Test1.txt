@@ -1,1 +1,1 @@
--- corrupted object file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\src\yapl\test\backend\sm\Test1.mj: wrong marker
+Hello world!
