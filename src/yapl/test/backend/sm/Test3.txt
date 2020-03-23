@@ -1,2 +1,2 @@
-
--- exception at address 0: wrong opcode 0
+True
+False

@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,8 +19,8 @@ public class BackendMJ implements BackendBinSM {
 	private IntBuffer data;
 	private Integer startPC;
 	private Integer dataSize;
-	private Map<String, Short> enterPosition;
-	private Map<String, Short> exitPosition;
+	private Map<String, Short> labelPosition;
+	private Map<String, ArrayList<Integer>> backPatching;
 	
 	public BackendMJ() {
 		code = ByteBuffer.allocate(100);
@@ -28,8 +29,8 @@ public class BackendMJ implements BackendBinSM {
 		startPC = 0;
 		dataSize = 0;
 		
-		enterPosition = new HashMap<String, Short>();
-		exitPosition = new HashMap<String, Short>();
+		labelPosition = new HashMap<String, Short>();
+		backPatching = new HashMap<String, ArrayList<Integer>>();
 	}
 	
 	@Override
@@ -40,14 +41,12 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public int boolValue(boolean value) {
-		// TODO Auto-generated method stub
-		return 0;
+		return value ? 1 : 0;
 	}
 
 	@Override
 	public void assignLabel(String label) {
-		// TODO Auto-generated method stub
-
+		manageLabelPosition(label);
 	}
 
 	@Override
@@ -95,20 +94,23 @@ public class BackendMJ implements BackendBinSM {
 	public int allocStringConstant(String string) {
 		int position = data.position();
 		int length = string.length();
+		int stringSize;
 		
 		if (length % 4 == 0) {
-			dataSize += length/4 + 1;
+			stringSize = length/4 + 1;
 		}
 		else { 
-			dataSize += (length+3)/4;
+			stringSize = (length+3)/4;
 		}
+		
+		dataSize += stringSize;
 
-		byte[] bytes = new byte[dataSize*4];
+		byte[] bytes = new byte[stringSize*4];
 
 		for (int i = 0; i < length; i++) 
 			bytes[i] = string.getBytes()[i];
 		
-		for (int i = length; i < dataSize*4; i++)
+		for (int i = length; i < stringSize*4; i++)
 			bytes[i] = (byte)0x00;
 		
 		IntBuffer temp = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).asIntBuffer();
@@ -147,7 +149,7 @@ public class BackendMJ implements BackendBinSM {
 		
 		Integer val = value;
 		
-		code.putInt(val.byteValue());
+		code.putInt(val);
 	}
 
 	@Override
@@ -162,8 +164,12 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public void storeWord(MemoryRegion region, int offset) {
-		// TODO Auto-generated method stub
-
+		if (region == MemoryRegion.STACK) {
+			code.put(ICode.STORE);
+			
+			Integer off = offset;
+			code.put(off.byteValue());
+		}
 	}
 
 	@Override
@@ -274,26 +280,83 @@ public class BackendMJ implements BackendBinSM {
 		// TODO Auto-generated method stub
 
 	}
+	
+	/*
+	 * Checks if label is known already. 
+	 * If address of label is known, puts address into code buffer, 
+	 * otherwise adds label to backpatching list
+	 * @param label 	The label for which the address needs to be determined
+	 */
+	private void putAddress(String label) {
+		if (labelPosition.containsKey(label)) {
+			short pos = labelPosition.get(label);
+			code.putShort(pos);
+		} else {
+			addBackPatching(label, code.position());
+		}
+	}
 
 	@Override
 	public void branchIf(boolean value, String label) {
-		// TODO Auto-generated method stub
+		int intVal = value ? 1 : 0;
+		loadConst(intVal);
+		
+		code.put(ICode.JEQ);
 
+		putAddress(label);
+	}
+	
+	private void addBackPatching(String label, int pos) {
+		ArrayList<Integer> positions;
+		
+		if (backPatching.containsKey(label)) {
+			positions = backPatching.get(label);
+		} else {
+			positions = new ArrayList<Integer>();
+		}
+		
+		positions.add(pos);
+		backPatching.put(label, positions);
+		
+		code.putShort(ICode.TEMP);
 	}
 
 	@Override
 	public void jump(String label) {
-		// TODO Auto-generated method stub
-
+		code.put(ICode.JMP);
+		
+		putAddress(label);
 	}
 
 	@Override
 	public void callProc(String label) {
 		code.put(ICode.CALL);
 		
-		Short pos = enterPosition.get(label);
+		putAddress(label);
+	}
+	
+	/*
+	 * Checks if this label is in the back patching list.
+	 * If true, performs back patching and removes label from back patching list.
+	 * @param label 	The label for which the back patching needs to be checked
+	 */
+	private void manageLabelPosition(String label) {
+		labelPosition.put(label, (short)code.position());
 		
-		code.putShort(pos.byteValue());
+		if (backPatching.containsKey(label)) {
+			
+			ArrayList<Integer> positions = backPatching.get(label);
+			
+			int position = code.position();
+			
+			for (Integer pos : positions) {
+				code.position(pos);
+				code.putShort((short)position);
+			}
+			
+			code.position(position);
+			backPatching.remove(label);
+		}
 	}
 
 	@Override
@@ -302,9 +365,9 @@ public class BackendMJ implements BackendBinSM {
 			startPC = code.position();
 		}
 		
-		enterPosition.put(label, (short)code.position());
-		
 		Integer params = nParams;
+
+		manageLabelPosition(label);
 		
 		code.put(ICode.ENTER);
 		code.put(params.byteValue());	// nparams
@@ -313,7 +376,7 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public void exitProc(String label) {
-		exitPosition.put(label, (short)code.position());
+		manageLabelPosition(label);
 
 		code.put(ICode.EXIT);
 		code.put(ICode.RETURN);
@@ -321,6 +384,7 @@ public class BackendMJ implements BackendBinSM {
 
 	@Override
 	public int paramOffset(int index) {
+		// TODO implement correctly
 		return index;
 	}
 
