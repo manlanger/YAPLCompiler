@@ -31,6 +31,9 @@ public interface ICode {
     public static final byte STORE_EL_ARRAY = (byte) 0x22;
     public static final byte ARRAY_LENGTH = (byte) 0x25;
 
+    public static final byte ALLOC_HEAP =(byte)0x1F;
+    public static final byte GET_FIELD = (byte)0x0D;
+    public static final byte PUT_FIELD = (byte)0x0E;
 
     /*
      * short constants
