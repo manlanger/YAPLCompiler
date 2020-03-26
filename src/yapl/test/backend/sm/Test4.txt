@@ -1,1 +1,2 @@
--- error reading file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\src\yapl\test\backend\sm\Test4.mj
+8
+-47
