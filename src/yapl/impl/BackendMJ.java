@@ -136,14 +136,15 @@ public class BackendMJ implements BackendBinSM {
             code.put(ICode.STORE);
             code.put(currentPs.byteValue());
         }
-        currentMethodStack.set(0,position + words);
-        // TODO Auto-generated method stub
+        currentMethodStack.set(0, position + words);
         return position;
     }
 
     @Override
     public void allocHeap(int words) {
-        // TODO Auto-generated method stub
+        Integer size = words;
+        code.put(ICode.ALLOC_HEAP);
+        code.putShort(size.shortValue());
 
     }
 
@@ -188,8 +189,11 @@ public class BackendMJ implements BackendBinSM {
                 code.put(cByte);
             }*/
 
+        } else if (region == MemoryRegion.HEAP) {
+            code.put(ICode.GET_FIELD);
+            Integer off = offset;
+            code.putShort(off.shortValue());
         }
-        //TODO Heap Region
     }
 
     @Override
@@ -208,9 +212,11 @@ public class BackendMJ implements BackendBinSM {
             for (byte cByte : bytes) {
                 code.put(cByte);
             }*/
+        } else if (region == MemoryRegion.HEAP) {
+            code.put(ICode.PUT_FIELD);
+            Integer off = offset;
+            code.putShort(off.shortValue());
         }
-
-        //TODO Heap Region
     }
 
     @Override
