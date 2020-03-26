@@ -5,9 +5,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.ICode;
@@ -21,14 +19,15 @@ public class BackendMJ implements BackendBinSM {
     private Integer dataSize;
     private Map<String, Short> labelPosition;
     private Map<String, ArrayList<Integer>> backPatching;
+    private Stack<Integer> currentMethodStack;
 
     public BackendMJ() {
-        code = ByteBuffer.allocate(100);
+        code = ByteBuffer.allocate(200);
         data = IntBuffer.allocate(100);
 
         startPC = 0;
         dataSize = 0;
-
+        currentMethodStack = new Stack<>();
         labelPosition = new HashMap<String, Short>();
         backPatching = new HashMap<String, ArrayList<Integer>>();
     }
@@ -129,9 +128,17 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public int allocStack(int words) {
-        int position;
+
+        int position = currentMethodStack.peek();
+        for (int i = 0; i < words; i++) {
+            Integer currentPs = position + i;
+            code.put(ICode.CONST0);
+            code.put(ICode.STORE);
+            code.put(currentPs.byteValue());
+        }
+        currentMethodStack.set(0,position + words);
         // TODO Auto-generated method stub
-        return 0;
+        return position;
     }
 
     @Override
@@ -142,12 +149,15 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public void storeArrayDim(int dim) {
-        // TODO Auto-generated method stub
+        // TODO storeArrayDim: For multi dimensional array only ignore for CA1
 
     }
 
     @Override
     public void allocArray() {
+        code.put(ICode.ALLOC_ARRAY);
+        // Allocated Word Array as default
+        code.put(ICode.ONE);
         // TODO Auto-gallocStringConstantenerated method stub
 
     }
@@ -170,14 +180,14 @@ public class BackendMJ implements BackendBinSM {
             code.put(off.byteValue());
         } else if (region == MemoryRegion.STATIC) {
             code.put(ICode.GET_STATIC);
-
+            //TODO Static Region Check if implementation is correct
             Integer off = offset;
             code.putShort(off.shortValue());
             /*byte[] bytes = ByteBuffer.allocate(2).putShort(off.shortValue()).order(ByteOrder.BIG_ENDIAN).array();
             for (byte cByte : bytes) {
                 code.put(cByte);
             }*/
-            //TODO Static Region
+
         }
         //TODO Heap Region
     }
@@ -191,7 +201,7 @@ public class BackendMJ implements BackendBinSM {
             code.put(off.byteValue());
         } else if (region == MemoryRegion.STATIC) {
             code.put(ICode.PUT_STATIC);
-            //TODO Static Region
+            //TODO Static Region Check if implementation is correct
             Integer off = offset;
             code.putShort(off.shortValue());
             /*byte[] bytes = ByteBuffer.allocate(2).putShort(off.shortValue()).order(ByteOrder.BIG_ENDIAN).array();
@@ -205,19 +215,19 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public void loadArrayElement() {
-        // TODO Auto-generated method stub
+        code.put(ICode.LOAD_EL_ARRAY);
 
     }
 
     @Override
     public void storeArrayElement() {
-        // TODO Auto-generated method stub
+        code.put(ICode.STORE_EL_ARRAY);
 
     }
 
     @Override
     public void arrayLength() {
-        // TODO Auto-generated method stub
+        code.put(ICode.ARRAY_LENGTH);
 
     }
 
@@ -401,6 +411,8 @@ public class BackendMJ implements BackendBinSM {
         Integer params = nParams;
 
         manageLabelPosition(label);
+        List<Integer> procedureStack = new ArrayList<>();
+        currentMethodStack.push(nParams);
 
         code.put(ICode.ENTER);
         code.put(params.byteValue());    // nparams
@@ -410,14 +422,14 @@ public class BackendMJ implements BackendBinSM {
     @Override
     public void exitProc(String label) {
         manageLabelPosition(label);
-
+        currentMethodStack.pop();
         code.put(ICode.EXIT);
         code.put(ICode.RETURN);
     }
 
     @Override
     public int paramOffset(int index) {
-        // TODO implement correctly
+        int position = currentMethodStack.peek();
         return index;
     }
 

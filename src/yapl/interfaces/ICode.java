@@ -5,6 +5,7 @@ public interface ICode {
      * byte constants
      */
     public static final byte ZERO = (byte) 0x00;
+    public static final byte ONE = (byte) 0x01;
     public static final byte LOAD = (byte) 0x01;
     public static final byte STORE = (byte) 0x06;
     public static final byte CONST0 = (byte) 0x0F;
@@ -23,7 +24,14 @@ public interface ICode {
     public static final byte ADD = (byte) 0x17;
     public static final byte SUB = (byte) 0x18;
     public static final byte MUL = (byte) 0x19;
-    public static final byte LOAD_ZERO = (byte)0x02;
+    public static final byte LOAD_ZERO = (byte) 0x02;
+
+    public static final byte ALLOC_ARRAY = (byte) 0x20;
+    public static final byte LOAD_EL_ARRAY = (byte) 0x21;
+    public static final byte STORE_EL_ARRAY = (byte) 0x22;
+    public static final byte ARRAY_LENGTH = (byte) 0x25;
+
+
     /*
      * short constants
      */
