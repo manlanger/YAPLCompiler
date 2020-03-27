@@ -22,7 +22,7 @@ public class BackendMJ implements BackendBinSM {
     private Stack<Integer> currentMethodStack;
 
     public BackendMJ() {
-        code = ByteBuffer.allocate(200);
+        code = ByteBuffer.allocate(400);
         data = IntBuffer.allocate(100);
 
         startPC = 0;
@@ -302,32 +302,68 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public void isEqual() {
-        // TODO Auto-generated method stub
+    	int position = code.position();
+    	
+    	int val1 = code.getInt(position-9);
+    	int val2 = code.getInt(position-4);
 
+    	code.put(ICode.POP);
+    	code.put(ICode.POP);
+    	
+    	loadConst(boolValue(val1 == val2));
     }
 
     @Override
     public void isLess() {
-        // TODO Auto-generated method stub
+    	int position = code.position();
+    	
+    	int val1 = code.getInt(position-9);
+    	int val2 = code.getInt(position-4);
+
+    	code.put(ICode.POP);
+    	code.put(ICode.POP);
+    	
+    	loadConst(boolValue(val1 < val2));
 
     }
 
     @Override
     public void isLessOrEqual() {
-        // TODO Auto-generated method stub
+    	int position = code.position();
+    	
+    	int val1 = code.getInt(position-9);
+    	int val2 = code.getInt(position-4);
 
+    	code.put(ICode.POP);
+    	code.put(ICode.POP);
+    	
+    	loadConst(boolValue(val1 <= val2));
     }
 
     @Override
     public void isGreater() {
-        // TODO Auto-generated method stub
+    	int position = code.position();
+    	
+    	int val1 = code.getInt(position-9);
+    	int val2 = code.getInt(position-4);
 
+    	code.put(ICode.POP);
+    	code.put(ICode.POP);
+    	
+    	loadConst(boolValue(val1 > val2));
     }
 
     @Override
     public void isGreaterOrEqual() {
-        // TODO Auto-generated method stub
+    	int position = code.position();
+    	
+    	int val1 = code.getInt(position-9);
+    	int val2 = code.getInt(position-4);
 
+    	code.put(ICode.POP);
+    	code.put(ICode.POP);
+    	
+    	loadConst(boolValue(val1 >= val2));
     }
 
     /*
