@@ -10,6 +10,7 @@ public interface ICode {
     public static final byte STORE = (byte) 0x06;
     public static final byte CONST0 = (byte) 0x0F;
     public static final byte CONST = (byte) 0x16;
+    public static final byte POP = (byte) 0x26;
     public static final byte JMP = (byte) 0x27;
     public static final byte JEQ = (byte) 0x28;
     public static final byte CALL = (byte) 0x2E;
