@@ -3,4 +3,6 @@ src/yapl/test/backend/sm/build-dist.xml
 *.iml
 .idea/
 out/
-src/yapl/test/backend/sm/build-dist.xml
+ant-bin
+src/yapl/test/backend/sm/*.mj
+src/yapl/test/backend/sm/*.txt

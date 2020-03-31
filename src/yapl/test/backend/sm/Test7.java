@@ -29,7 +29,13 @@ public class Test7 {
         backend.loadConst(1);
         backend.neg();
 
+        //Test Add
+        backend.loadConst(4);
+        backend.loadConst(2);
+        backend.add();
         //Print Output
+        backend.writeInteger(); // 6
+        backend.writeString(addrNewline);
         backend.writeInteger(); // -1
         backend.writeString(addrNewline);
         backend.writeInteger(); // 0
