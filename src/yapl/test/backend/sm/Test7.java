@@ -8,7 +8,7 @@ import java.io.IOException;
 
 public class Test7 {
     /**
-     * Usage: java yapl.test.backend.sm.Test8 object_file
+     * Usage: java yapl.test.backend.sm.Test7 object_file
      */
     public static void main(String[] args) throws IOException {
         BackendBinSM backend = new BackendMJ();
