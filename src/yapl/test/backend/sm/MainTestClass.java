@@ -11,13 +11,19 @@ public class MainTestClass {
 		Test4 t4 = new Test4();
 		Test5 t5 = new Test5();
 		Test6 t6 = new Test6();
-		t1.main(new String[] {"C:\\Users\\Manuel\\Desktop\\t1.txt"});
-		t2.main(new String[] {"C:\\Users\\Manuel\\Desktop\\t2.txt"});
-		t3.main(new String[] {"C:\\Users\\Manuel\\Desktop\\t3.txt"});
-		t4.main(new String[] {"C:\\Users\\Manuel\\Desktop\\t4.txt"});
-		t5.main(new String[] {"C:\\Users\\Manuel\\Desktop\\t5.txt"});
-		t6.main(new String[] {"C:\\Users\\Manuel\\Desktop\\t6.txt"});
+		t1.main(new String[] {generatePath("Test1.mj")});
+		t2.main(new String[] {generatePath("Test2.mj")});
+		t3.main(new String[] {generatePath("Test3.mj")});
+		t4.main(new String[] {generatePath("Test4.mj")});
+		t5.main(new String[] {generatePath("Test5.mj")});
+		t6.main(new String[] {generatePath("Test6.mj")});
+		Test7.main(new String[]{generatePath("Test7.mj")});
+		Test8.main(new String[] {generatePath("Test8.mj")});
+	}
 
+	private static String generatePath( String filename)
+	{
+		return System.getProperty("user.dir") + "\\src\\yapl\\test\\backend\\sm\\" + filename;
 	}
 
 }

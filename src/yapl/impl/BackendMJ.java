@@ -181,7 +181,6 @@ public class BackendMJ implements BackendBinSM {
             code.put(off.byteValue());
         } else if (region == MemoryRegion.STATIC) {
             code.put(ICode.GET_STATIC);
-            //TODO Static Region Check if implementation is correct
             Integer off = offset;
             code.putShort(off.shortValue());
             /*byte[] bytes = ByteBuffer.allocate(2).putShort(off.shortValue()).order(ByteOrder.BIG_ENDIAN).array();
@@ -205,7 +204,6 @@ public class BackendMJ implements BackendBinSM {
             code.put(off.byteValue());
         } else if (region == MemoryRegion.STATIC) {
             code.put(ICode.PUT_STATIC);
-            //TODO Static Region Check if implementation is correct
             Integer off = offset;
             code.putShort(off.shortValue());
             /*byte[] bytes = ByteBuffer.allocate(2).putShort(off.shortValue()).order(ByteOrder.BIG_ENDIAN).array();
@@ -252,14 +250,13 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public void neg() {
-        // TODO Auto-generated method stub
+        code.put(ICode.NEG);
 
     }
 
     @Override
     public void add() {
         code.put(ICode.ADD);
-        // TODO Auto-generated method stub
 
     }
 
@@ -272,19 +269,18 @@ public class BackendMJ implements BackendBinSM {
     @Override
     public void mul() {
         code.put(ICode.MUL);
-        // TODO Auto-generated method stub
 
     }
 
     @Override
     public void div() {
-        // TODO Auto-generated method stub
+       code.put(ICode.DIV);
 
     }
 
     @Override
     public void mod() {
-        // TODO Auto-generated method stub
+        code.put(ICode.REM);
 
     }
 

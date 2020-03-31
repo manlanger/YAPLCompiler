@@ -5,14 +5,14 @@ M. Taschwer, March 2016
 	</description>
 	
     <!-- customize to your environment -->
-	<property name="globalbasedir" location="C:/Users/Manuel/Desktop/Uni/Eclipse/YAPLCompiler"/>
+	<property name="globalbasedir" location="../../../../.."/>
 	<property name="src" location="${globalbasedir}/src"/>
 	<property name="build" location="${globalbasedir}/ant-bin"/>
     <property name="ant-contrib-jar" location="${globalbasedir}/lib/ant-contrib.jar"/>
     <property name="mj-jar" location="${globalbasedir}/mjvm/mj.jar"/>
     
     <!-- list of Java test classes -->
-    <property name="testclasses" value="Test1,Test2,Test3,Test4,Test5,Test6,Test8"/>
+    <property name="testclasses" value="Test1,Test2,Test3,Test4,Test5,Test6,Test7,Test8"/>
     
     <!-- properties for invoking 'eval' target directly -->
     <property name="mainclass" value="yapl.test.backend.sm.Test1"/>
