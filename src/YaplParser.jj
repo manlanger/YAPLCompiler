@@ -69,30 +69,212 @@ SPECIAL_TOKEN :
   <COMMENT: "/*" (~["\n","\r"])* "*/">
 }
 
-TOKEN : /* OPERATORS */
+/*
+Symbols
+*/
+TOKEN :
 {
-  < PLUS : "+" >
+  < HASH : "#" >
+| < PERC : "%" >
+| < LEFTPAR : "(" >
+| < RIGHTPAR : ")" >
+| < MULT : "*" >
+| < PLUS : "+" >
+| < COMMA : "," >
 | < MINUS : "-" >
-| < MULTIPLY : "*" >
-| < DIVIDE : "/" >
+| < DOT : "." >
+| < SLASH : "/" >
+| < LESSTHAN : "<" >
+| < GREATERTHAN : ">" >
+| < LEFTBRACKET : "[" >
+| < RIGHTBRACKET : "]" >
+| < OR : "Or" >
+| < AND : "And" >
+| < INT : "int" >
+| < NEW : "new" >
+| < TRUE : "True" >
+| < FALSE : "False" >
+| < BOOL : "bool" >
 }
+
+/*
+letter = "A" .. "Z" | "a" .. "z" | "_" .
+digit = "0" .. "9" .
+otherchar = "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!"
+| "?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"
+| "[" | "]" | "{" | "}" | "\" | "@" | "&" | "^" | "|" .
+ident = letter { letter | digit } .
+number = digit { digit } .
+string = '"' { " " | letter | digit | otherchar } '"' .
+*/
 
 TOKEN :
 {
-  < #DIGIT : [ "0"-"9" ] >
-| < #LETTER : (["A"-"Z","a"-"z","_"])>
-| < CONSTANT : (< DIGIT >)+ >
+  < #LETTER : (["A"-"Z","a"-"z","_"]) >
+| < #DIGIT : [ "0"-"9" ] >
 | < OTHERCHAR : "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!" | "?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")" | "[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|" >
 | < IDENT : < LETTER > ( < LETTER > | < DIGIT > )* >
 | < NUMBER : < DIGIT > ( < DIGIT > )* >
 | < STRING : "\"" ( " " | < LETTER > | < DIGIT > | < OTHERCHAR > )* "\"" > 
 }
 
+/*
+RelOp = "<" | "<=" | ">=" | ">" .
+EqualOp = "==" | "!=" .
+AddOp = "+" | "-" .
+MulOp = "*" | "/" | "%" .
+*/
+
+void RelOp() :
+{}
+{
+  ( "<" | "<=" | ">=" | ">" )
+}
+
+void EqualOp() :
+{}
+{
+  ( "==" | "!=" )
+}
+
+void AddOp() :
+{}
+{
+  ( "+" | "-" )
+}
+
+void MulOp() :
+{}
+{
+  ( "*" | "/" | "%" )
+}
+
+/*
+Literal = "True" | "False" | number .
+Selector = ( "[" Expr "]" | "." ident ) [ Selector ] .
+ArrayLen = "#" ident [ Selector ] .
+*/
+
+void Literal() :
+{}
+{
+  ( "True" | "False" | < NUMBER > )
+}
+
+void Selector() :
+{}
+{
+  ( "[" Expr() "]" | "." < IDENT > ) [ Selector() ]
+}
+
+void ArrayLen() :
+{}
+{
+  "#" < IDENT > [ Selector() ]
+}
+
+/*
+PrimaryExpr = Literal | "(" Expr ")" | ProcedureCall | ident [ Selector ] | ArrayLen .
+UnaryExpr = [AddOp] PrimaryExpr .
+MulExpr = UnaryExpr { MulOp UnaryExpr } .
+AddExpr = MulExpr { AddOp MulExpr } .
+RelExpr = AddExpr [ RelOp AddExpr ] .
+*/
+
+void PrimaryExpr() :
+{}
+{
+  ( Literal() | "(" Expr() ")" | LOOKAHEAD(2) ProcedureCall() | < IDENT > [ Selector() ] | ArrayLen() )
+}
+
+void UnaryExpr() :
+{}
+{
+  [ AddOp() ] PrimaryExpr()
+}
+
+void MulExpr() :
+{}
+{
+  UnaryExpr() ( MulOp() UnaryExpr() )*
+}
+
+void AddExpr() :
+{}
+{
+  MulExpr() ( AddOp() MulExpr() )*
+}
+
+void RelExpr() :
+{}
+{
+  AddExpr() [ RelOp() AddExpr() ]
+}
+
+/*
+EqualExpr = RelExpr [ EqualOp RelExpr ] .
+CondAndExpr = EqualExpr { "And" EqualExpr } .
+CreationExpr = "new" NonArrayType { "[" Expr "]" } .
+Expr = CondAndExpr { "Or" CondAndExpr } | CreationExpr .
+*/
+
+void EqualExpr() :
+{}
+{
+  RelExpr() [ EqualOp() RelExpr() ]
+}
+
+void CondAndExpr() :
+{}
+{
+  EqualExpr() ( "And" EqualExpr() )*
+}
+
+void CreationExpr() :
+{}
+{
+  "new" NonArrayType() ( "[" Expr() "]" )*
+}
+
+void Expr() :
+{}
+{
+  CondAndExpr() [ ( "Or" CondAndExpr() )+ | CreationExpr() ]
+}
+
+/*
+ArgumentList = Expr { "," Expr } .
+ProcedureCall = ident "(" [ ArgumentList ] ")" .
+*/
+
+void ArgumentList() :
+{}
+{
+  Expr() ( "," Expr() )*
+}
+
+void ProcedureCall() :
+{}
+{
+  < IDENT > "(" [ ArgumentList() ] ")"
+}
+
+/*
+NonArrayType = "int" | "bool" | ident .
+*/
+
+void NonArrayType() :
+{}
+{
+  ( "int" | "bool" | < IDENT > )
+}
+
+
 void Start() : { Token t; } {
 {
   do {
 	t = getNextToken();
-	System.out.println(t.toString());
+	System.out.println("Token: " + t.toString());
 	} while (t.kind != EOF);
 }
 <EOF>
