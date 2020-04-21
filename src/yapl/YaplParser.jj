@@ -1,0 +1,448 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options {
+  LOOKAHEAD = 1;
+  CHOICE_AMBIGUITY_CHECK = 2;
+  OTHER_AMBIGUITY_CHECK = 1;
+  STATIC = true;
+  DEBUG_PARSER = false;
+  DEBUG_LOOKAHEAD = false;
+  DEBUG_TOKEN_MANAGER = false;
+  ERROR_REPORTING = true;
+  JAVA_UNICODE_ESCAPE = false;
+  UNICODE_INPUT = false;
+  IGNORE_CASE = false;
+  USER_TOKEN_MANAGER = false;
+  USER_CHAR_STREAM = false;
+  BUILD_PARSER = true;
+  BUILD_TOKEN_MANAGER = true;
+  SANITY_CHECK = true;
+  FORCE_LA_CHECK = false;
+}
+
+PARSER_BEGIN(YaplParser)
+
+package yapl;
+
+import yapl.interfaces.CompilerError;import yapl.lib.CompilerMessage;
+import yapl.compiler.ParseException;
+import yapl.compiler.TokenMgrError;
+
+public class YaplParser
+{
+    private static String programName = "";
+
+  	public static void main(String args []) throws ParseException
+  	{
+      	YaplParser parser = null;
+
+	    if(args.length == 0){
+	    	System.out.println ("YaplParser: Reading input ...");
+	    	parser = new YaplParser(System.in);
+	    }
+	    else if(args.length == 1){
+	    	//System.out.println ("YaplParser: Reading the file " + args[0] + " ..." );
+
+	        try {
+	          parser = new YaplParser(new java.io.FileInputStream(args[0]));
+	        }
+
+	        catch(java.io.FileNotFoundException e) {
+	        	System.out.println ("ExampleParser: The file " + args[0] + " was not found.");
+	        	return;
+	        }
+	    }
+
+		if (parser == null) {
+		  	System.out.println ("Parser initialization failed!");
+		} else {
+		    try {
+		        parser.Start();
+		        CompilerMessage.printOK(programName);
+		    }catch (Throwable e)
+		    {
+
+                CompilerMessage.printError((CompilerError) e, programName);
+		    }
+
+		}
+  	}
+}
+
+PARSER_END(YaplParser)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+SPECIAL_TOKEN :
+{
+  <COMMENT: "/*" (~[])* "*/"> |
+  <SINGLE_LINE_COMMENT: "//" (~["\n","\r"])* ("\n" | "\r" | "\r\n")>
+}
+
+/*
+Symbols
+*/
+TOKEN :
+{
+  < HASH : "#" >
+| < PERC : "%" >
+| < LEFTPAR : "(" >
+| < RIGHTPAR : ")" >
+| < MULT : "*" >
+| < PLUS : "+" >
+| < COMMA : "," >
+| < MINUS : "-" >
+| < DOT : "." >
+| < SLASH : "/" >
+| < LESSTHAN : "<" >
+| < GREATERTHAN : ">" >
+| < LEFTBRACKET : "[" >
+| < RIGHTBRACKET : "]" >
+| < OR : "Or" >
+| < AND : "And" >
+| < INT : "int" >
+| < NEW : "new" >
+| < TRUE : "True" >
+| < FALSE : "False" >
+| < BOOL : "bool" >
+| < IF : "If" >
+| <SEMICOLOM : ";" >
+| <WHILE : "While" >
+| <VOID : "void" >
+| <ELSE : "Else" >
+| <END : "End" >
+| <WRITE : "Write" >
+| <PROGRAM : "Program" >
+| <DECLARE: "Declare" >
+| <EQUALS: "=" >
+| <CONST: "Const">
+| <PROCEDURE: "Procedure" >
+| <BEGIN: "Begin" >
+| <RETURN: "Return" >
+| <COLOMEQUALS: ":=">
+| <DO:"Do">
+| <THEN:"Then">
+| <ENDIF:"EndIf" >
+| <RECORD:"Record" >
+| <ENDRECORD:"EndRecord" >
+| <ENDWHILE: "EndWhile" >
+| <WRITE_INT: "writeint">
+| <WRITE_BOOL: "writebool">
+| <WRITE_LN: "writeln">
+| <READ_INT: "readint">
+}
+
+/*
+letter = "A" .. "Z" | "a" .. "z" | "_" .
+digit = "0" .. "9" .
+otherchar = "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!"
+| "?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"
+| "[" | "]" | "{" | "}" | "\" | "@" | "&" | "^" | "|" .
+ident = letter { letter | digit } .
+number = digit { digit } .
+string = '"' { " " | letter | digit | otherchar } '"' .
+*/
+
+TOKEN :
+{
+  < #LETTER : (["A"-"Z","a"-"z","_"]) >
+| < #DIGIT : [ "0"-"9" ] >
+| < OTHERCHAR : "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!" | "?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")" | "[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|" >
+| < IDENT : < LETTER > ( < LETTER > | < DIGIT > )* >
+| < NUMBER : < DIGIT > ( < DIGIT > )* >
+| < STRING : "\"" ( " " | < LETTER > | < DIGIT > | < OTHERCHAR > )* "\"" > 
+}
+
+/*
+RelOp = "<" | "<=" | ">=" | ">" .
+EqualOp = "==" | "!=" .
+AddOp = "+" | "-" .
+MulOp = "*" | "/" | "%" .
+*/
+
+void RelOp() :
+{}
+{
+  ( "<" | "<=" | ">=" | ">" )
+}
+
+void EqualOp() :
+{}
+{
+  ( "==" | "!=" )
+}
+
+void AddOp() :
+{}
+{
+  ( "+" | "-" )
+}
+
+void MulOp() :
+{}
+{
+  ( "*" | "/" | "%" )
+}
+
+/*
+Literal = "True" | "False" | number .
+Selector = ( "[" Expr "]" | "." ident ) [ Selector ] .
+ArrayLen = "#" ident [ Selector ] .
+*/
+
+void Literal() :
+{}
+{
+  ( "True" | "False" | < NUMBER > )
+}
+
+void Selector() :
+{}
+{
+  ( "[" Expr() "]" | "." < IDENT > ) [ Selector() ]
+}
+
+void ArrayLen() :
+{}
+{
+  "#" < IDENT > [ Selector() ]
+}
+
+/*
+PrimaryExpr = Literal | "(" Expr ")" | ProcedureCall | ident [ Selector ] | ArrayLen .
+UnaryExpr = [AddOp] PrimaryExpr .
+MulExpr = UnaryExpr { MulOp UnaryExpr } .
+AddExpr = MulExpr { AddOp MulExpr } .
+RelExpr = AddExpr [ RelOp AddExpr ] .
+*/
+
+void PrimaryExpr() :
+{}
+{
+  ( Literal() | "(" Expr() ")" | LOOKAHEAD(2) ProcedureCall() | < IDENT > [ Selector() ] | ArrayLen() )
+}
+
+void UnaryExpr() :
+{}
+{
+  [ AddOp() ] PrimaryExpr()
+}
+
+void MulExpr() :
+{}
+{
+  UnaryExpr() ( MulOp() UnaryExpr() )*
+}
+
+void AddExpr() :
+{}
+{
+  MulExpr() ( AddOp() MulExpr() )*
+}
+
+void RelExpr() :
+{}
+{
+  AddExpr() [ RelOp() AddExpr() ]
+}
+
+/*
+EqualExpr = RelExpr [ EqualOp RelExpr ] .
+CondAndExpr = EqualExpr { "And" EqualExpr } .
+CreationExpr = "new" NonArrayType { "[" Expr "]" } .
+Expr = CondAndExpr { "Or" CondAndExpr } | CreationExpr .
+*/
+
+void EqualExpr() :
+{}
+{
+  RelExpr() [ EqualOp() RelExpr() ]
+}
+
+void CondAndExpr() :
+{}
+{
+  EqualExpr() ( "And" EqualExpr() )*
+}
+
+void CreationExpr() :
+{}
+{
+  "new" NonArrayType() ( "[" Expr() "]" )*
+}
+
+void Expr() :
+{}
+{
+  CondAndExpr()  ( "Or" CondAndExpr() )* | CreationExpr()
+}
+
+/*
+ArgumentList = Expr { "," Expr } .
+ProcedureCall = ident "(" [ ArgumentList ] ")" .
+*/
+
+void ArgumentList() :
+{}
+{
+  Expr() ( "," Expr() )*
+}
+
+void ProcedureCall() :
+{}
+{
+  (PreDefinedProcedures() |< IDENT >) "(" [ ArgumentList() ] ")"
+}
+
+void Assignment() :
+{}
+{
+    < IDENT > [ Selector() ] ":=" Expr()
+}
+
+void IfStatement() :
+{}
+{
+    "If" Expr() "Then" StatementList() [ "Else" StatementList() ] "EndIf"
+}
+
+void WhileStatement() :
+{}
+{
+    "While" Expr() "Do" StatementList() "EndWhile"
+}
+
+void ReturnStatement() :
+{}
+{
+    "Return" [ Expr() ]
+}
+
+void WriteStatement() :
+{}
+{
+    "Write" < STRING >
+}
+
+void Statement() :
+{}
+{
+    IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() | LOOKAHEAD(2) Assignment() |  LOOKAHEAD(2) ProcedureCall() | Block()
+}
+
+void StatementList() :
+{}
+{
+    ( Statement() ";" )*
+}
+
+void Block():
+{}
+{
+    [ Decl() ] "Begin" StatementList() "End"
+}
+
+/*
+NonArrayType = "int" | "bool" | ident .
+*/
+
+void NonArrayType() :
+{}
+{
+  ( "int" | "bool" | < IDENT > )
+}
+
+void Type() :
+{}
+{
+    NonArrayType() ( "[" "]" )*
+}
+
+void ReturnType() :
+{}
+{
+    "void" | Type()
+}
+
+void ConstDecl() :
+{}
+{
+    "Const" < IDENT > "=" Literal() ";"
+}
+
+void VarDecl():
+{}
+{
+    Type() < IDENT > ( "," <IDENT>)* ";"
+}
+
+void TypeDecl():
+{}
+{
+    "Record" < IDENT > VarDecl() ( VarDecl() )* "EndRecord" ";"
+}
+
+void Decl():
+{}
+{
+    "Declare" ( ConstDecl() | VarDecl() | TypeDecl() )*
+}
+
+void FormalParam():
+{}
+{
+    Type() <IDENT>
+}
+
+void FormalParamList():
+{}
+{
+    FormalParam() ( "," FormalParam() )*
+}
+
+void Procedure():
+{}
+{
+    "Procedure" ReturnType() <IDENT> "(" [ FormalParamList() ] ")" Block()  <IDENT> ";"
+}
+
+void Program(): { }
+{
+
+    "Program" <IDENT>
+    {
+    programName = token.toString();
+    }
+    (Decl() | Procedure())*
+    "Begin" StatementList() "End" <IDENT> "."
+}
+
+void PreDefinedProcedures():
+{}
+{
+    "writeint"|"writebool"|"writeln"|"readint"
+}
+
+void Start() :
+{}
+{
+    Program() <EOF>
+}
+
+/*
+void Start() : { Token t; } {
+{
+  do {
+	t = getNextToken();
+	System.out.println("Token: " + t.toString());
+	} while (t.kind != EOF);
+}
+<EOF>
+}*/

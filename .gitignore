@@ -6,3 +6,10 @@ out/
 ant-bin
 src/yapl/test/backend/sm/*.mj
 src/yapl/test/backend/sm/*.txt
+/src/yapl/ParseException.java
+/src/yapl/SimpleCharStream.java
+/src/yapl/Token.java
+/src/yapl/TokenMgrError.java
+/src/yapl/YaplParser.java
+/src/yapl/YaplParserConstants.java
+/src/yapl/YaplParserTokenManager.java

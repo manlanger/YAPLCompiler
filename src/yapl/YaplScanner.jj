@@ -21,7 +21,13 @@ options {
   FORCE_LA_CHECK = false;
 }
 
-PARSER_BEGIN(YaplParser)
+PARSER_BEGIN(YaplScanner)
+
+package yapl;
+
+import yapl.lib.CompilerMessage;
+import yapl.compiler.ParseException;
+import yapl.compiler.TokenMgrError;
 
 public class YaplParser
 {
@@ -54,7 +60,7 @@ public class YaplParser
   	}
 }
 
-PARSER_END(YaplParser)
+PARSER_END(YaplScanner)
 
 SKIP :
 {

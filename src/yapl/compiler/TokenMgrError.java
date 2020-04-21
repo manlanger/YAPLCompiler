@@ -22,22 +22,22 @@ public class TokenMgrError extends Error implements CompilerError
   /**
    * Lexical error occurred.
    */
-  static final int LEXICAL_ERROR = 0;
+  public static final int LEXICAL_ERROR = 0;
 
   /**
    * An attempt was made to create a second instance of a static token manager.
    */
-  static final int STATIC_LEXER_ERROR = 1;
+  public static final int STATIC_LEXER_ERROR = 1;
 
   /**
    * Tried to change to an invalid lexical state.
    */
-  static final int INVALID_LEXICAL_STATE = 2;
+  public static final int INVALID_LEXICAL_STATE = 2;
 
   /**
    * Detected (and bailed out of) an infinite loop in the token manager.
    */
-  static final int LOOP_DETECTED = 3;
+  public static final int LOOP_DETECTED = 3;
 
   /**
    * Indicates the reason why the exception is thrown. It will have
@@ -46,13 +46,12 @@ public class TokenMgrError extends Error implements CompilerError
   int errorCode;
 
   /* Fields needed to implement the CompilerError interface. */
-  
+
   /** The source line number where the error occurred. */
   private int line = -1;
-  
+
   /** The column line number where the error occurred. */
   private int column = -1;
-  
   /**
    * Replaces unprintable characters by their escaped (or unicode escaped)
    * equivalents in the given string
@@ -63,8 +62,6 @@ public class TokenMgrError extends Error implements CompilerError
     for (int i = 0; i < str.length(); i++) {
       switch (str.charAt(i))
       {
-        case 0 :
-          continue;
         case '\b':
           retval.append("\\b");
           continue;
@@ -114,13 +111,15 @@ public class TokenMgrError extends Error implements CompilerError
    *    curchar     : the offending character
    * Note: You can customize the lexical error message by modifying this method.
    */
-  protected static String LexicalError(boolean EOFSeen, int lexState, int errorLine, int errorColumn, String errorAfter, char curChar) {
+  protected static String LexicalErr(boolean EOFSeen, int lexState, int errorLine, int errorColumn, String errorAfter, int curChar) {
+    char curChar1 = (char)curChar;
     return("Lexical error at line " +
-          errorLine + ", column " +
-          errorColumn + ".  Encountered: " +
-          (EOFSeen ? "<EOF> " : ("\"" + addEscapes(String.valueOf(curChar)) + "\"") + " (" + (int)curChar + "), ") +
-          "after : \"" + addEscapes(errorAfter) + "\"");
+            errorLine + ", column " +
+            errorColumn + ".  Encountered: " +
+            (EOFSeen ? "<EOF> " : ("\"" + addEscapes(String.valueOf(curChar1)) + "\"") + " (" + curChar + "), ") +
+            "after : \"" + addEscapes(errorAfter) + "\"");
   }
+
 
   /**
    * You can also modify the body of this method to customize your error messages.
@@ -131,6 +130,7 @@ public class TokenMgrError extends Error implements CompilerError
    *
    * from this method for such cases in the release version of your parser.
    */
+  @Override
   public String getMessage() {
     return super.getMessage();
   }
@@ -150,28 +150,26 @@ public class TokenMgrError extends Error implements CompilerError
   }
 
   /** Full Constructor. */
-  public TokenMgrError(boolean EOFSeen, int lexState, int errorLine, int errorColumn, String errorAfter, char curChar, int reason) {
-    this(LexicalError(EOFSeen, lexState, errorLine, errorColumn, errorAfter, curChar), reason);
+  public TokenMgrError(boolean EOFSeen, int lexState, int errorLine, int errorColumn, String errorAfter, int curChar, int reason) {
+    this(LexicalErr(EOFSeen, lexState, errorLine, errorColumn, errorAfter, curChar), reason);
     this.line = errorLine;
     this.column = errorColumn;
   }
-
   /* CompilerError methods. */
-  
+
   public int errorNumber()
   {
-      return CompilerError.Lexical;
-  }
-  
-  public int line()
-  {
-      return this.line;
-  }
-  
-  public int column()
-  {
-      return this.column;
+    return CompilerError.Lexical;
   }
 
+  public int line()
+  {
+    return this.line;
+  }
+
+  public int column()
+  {
+    return this.column;
+  }
 }
-/* JavaCC - OriginalChecksum=76050b3c05c941b137612dfbf30df01b (do not edit this line) */
+/* JavaCC - OriginalChecksum=4f1a50a0ab7f377bc32bcf7a3055e749 (do not edit this line) */
