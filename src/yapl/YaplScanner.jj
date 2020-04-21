@@ -21,18 +21,16 @@ options {
   FORCE_LA_CHECK = false;
 }
 
-PARSER_BEGIN(YaplParser)
+PARSER_BEGIN(YaplScanner)
 
 package yapl;
 
-import yapl.interfaces.CompilerError;import yapl.lib.CompilerMessage;
+import yapl.lib.CompilerMessage;
 import yapl.compiler.ParseException;
 import yapl.compiler.TokenMgrError;
 
 public class YaplParser
 {
-    private static String programName = "";
-
   	public static void main(String args []) throws ParseException
   	{
       	YaplParser parser = null;
@@ -42,7 +40,7 @@ public class YaplParser
 	    	parser = new YaplParser(System.in);
 	    }
 	    else if(args.length == 1){
-	    	//System.out.println ("YaplParser: Reading the file " + args[0] + " ..." );
+	    	System.out.println ("YaplParser: Reading the file " + args[0] + " ..." );
 
 	        try {
 	          parser = new YaplParser(new java.io.FileInputStream(args[0]));
@@ -57,20 +55,12 @@ public class YaplParser
 		if (parser == null) {
 		  	System.out.println ("Parser initialization failed!");
 		} else {
-		    try {
-		        parser.Start();
-		        CompilerMessage.printOK(programName);
-		    }catch (Throwable e)
-		    {
-
-                CompilerMessage.printError((CompilerError) e, programName);
-		    }
-
+		  	parser.Start();
 		}
   	}
 }
 
-PARSER_END(YaplParser)
+PARSER_END(YaplScanner)
 
 SKIP :
 {
@@ -82,8 +72,7 @@ SKIP :
 
 SPECIAL_TOKEN :
 {
-  <COMMENT: "/*" (~[])* "*/"> |
-  <SINGLE_LINE_COMMENT: "//" (~["\n","\r"])* ("\n" | "\r" | "\r\n")>
+  <COMMENT: "/*" (~["\n","\r"])* "*/">
 }
 
 /*
@@ -112,31 +101,6 @@ TOKEN :
 | < TRUE : "True" >
 | < FALSE : "False" >
 | < BOOL : "bool" >
-| < IF : "If" >
-| <SEMICOLOM : ";" >
-| <WHILE : "While" >
-| <VOID : "void" >
-| <ELSE : "Else" >
-| <END : "End" >
-| <WRITE : "Write" >
-| <PROGRAM : "Program" >
-| <DECLARE: "Declare" >
-| <EQUALS: "=" >
-| <CONST: "Const">
-| <PROCEDURE: "Procedure" >
-| <BEGIN: "Begin" >
-| <RETURN: "Return" >
-| <COLOMEQUALS: ":=">
-| <DO:"Do">
-| <THEN:"Then">
-| <ENDIF:"EndIf" >
-| <RECORD:"Record" >
-| <ENDRECORD:"EndRecord" >
-| <ENDWHILE: "EndWhile" >
-| <WRITE_INT: "writeint">
-| <WRITE_BOOL: "writebool">
-| <WRITE_LN: "writeln">
-| <READ_INT: "readint">
 }
 
 /*
@@ -281,7 +245,7 @@ void CreationExpr() :
 void Expr() :
 {}
 {
-  CondAndExpr()  ( "Or" CondAndExpr() )* | CreationExpr()
+  CondAndExpr() [ ( "Or" CondAndExpr() )+ | CreationExpr() ]
 }
 
 /*
@@ -298,55 +262,7 @@ void ArgumentList() :
 void ProcedureCall() :
 {}
 {
-  (PreDefinedProcedures() |< IDENT >) "(" [ ArgumentList() ] ")"
-}
-
-void Assignment() :
-{}
-{
-    < IDENT > [ Selector() ] ":=" Expr()
-}
-
-void IfStatement() :
-{}
-{
-    "If" Expr() "Then" StatementList() [ "Else" StatementList() ] "EndIf"
-}
-
-void WhileStatement() :
-{}
-{
-    "While" Expr() "Do" StatementList() "EndWhile"
-}
-
-void ReturnStatement() :
-{}
-{
-    "Return" [ Expr() ]
-}
-
-void WriteStatement() :
-{}
-{
-    "Write" < STRING >
-}
-
-void Statement() :
-{}
-{
-    IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() | LOOKAHEAD(2) Assignment() |  LOOKAHEAD(2) ProcedureCall() | Block()
-}
-
-void StatementList() :
-{}
-{
-    ( Statement() ";" )*
-}
-
-void Block():
-{}
-{
-    [ Decl() ] "Begin" StatementList() "End"
+  < IDENT > "(" [ ArgumentList() ] ")"
 }
 
 /*
@@ -359,84 +275,7 @@ void NonArrayType() :
   ( "int" | "bool" | < IDENT > )
 }
 
-void Type() :
-{}
-{
-    NonArrayType() ( "[" "]" )*
-}
 
-void ReturnType() :
-{}
-{
-    "void" | Type()
-}
-
-void ConstDecl() :
-{}
-{
-    "Const" < IDENT > "=" Literal() ";"
-}
-
-void VarDecl():
-{}
-{
-    Type() < IDENT > ( "," <IDENT>)* ";"
-}
-
-void TypeDecl():
-{}
-{
-    "Record" < IDENT > VarDecl() ( VarDecl() )* "EndRecord" ";"
-}
-
-void Decl():
-{}
-{
-    "Declare" ( ConstDecl() | VarDecl() | TypeDecl() )*
-}
-
-void FormalParam():
-{}
-{
-    Type() <IDENT>
-}
-
-void FormalParamList():
-{}
-{
-    FormalParam() ( "," FormalParam() )*
-}
-
-void Procedure():
-{}
-{
-    "Procedure" ReturnType() <IDENT> "(" [ FormalParamList() ] ")" Block()  <IDENT> ";"
-}
-
-void Program(): { }
-{
-
-    "Program" <IDENT>
-    {
-    programName = token.toString();
-    }
-    (Decl() | Procedure())*
-    "Begin" StatementList() "End" <IDENT> "."
-}
-
-void PreDefinedProcedures():
-{}
-{
-    "writeint"|"writebool"|"writeln"|"readint"
-}
-
-void Start() :
-{}
-{
-    Program() <EOF>
-}
-
-/*
 void Start() : { Token t; } {
 {
   do {
@@ -445,4 +284,4 @@ void Start() : { Token t; } {
 	} while (t.kind != EOF);
 }
 <EOF>
-}*/
+}
