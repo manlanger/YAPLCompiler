@@ -23,6 +23,12 @@ options {
 
 PARSER_BEGIN(YaplParser)
 
+package yapl;
+
+import yapl.lib.CompilerMessage;
+import yapl.compiler.ParseException;
+import yapl.compiler.TokenMgrError;
+
 public class YaplParser
 {
   	public static void main(String args []) throws ParseException
