@@ -1,25 +1,43 @@
 package yapl.lib;
 
+import yapl.Token;
 import yapl.interfaces.CompilerError;
 
 public class YAPLException extends Throwable implements CompilerError {
 
+	private int errorNumber = -1;
+	private int line = -1;
+	private int column = -1;
+	private String message = null;
+	
+	public YAPLException(String message) {
+		this.message = message;
+	}
+	
+	public YAPLException(String message, int errorNumber, Token end_proc) {
+		this.message = message;
+		this.errorNumber = errorNumber;
+		this.line = end_proc.beginLine;
+		this.column = end_proc.beginColumn;
+	}
+	
 	@Override
 	public int errorNumber() {
-		// TODO Auto-generated method stub
-		return 0;
+		return errorNumber;
 	}
 
 	@Override
 	public int line() {
-		// TODO Auto-generated method stub
-		return 0;
+		return line;
 	}
 
 	@Override
 	public int column() {
-		// TODO Auto-generated method stub
-		return 0;
+		return column;
 	}
 
+	@Override
+	public String getMessage() {
+		return message;
+	}
 }

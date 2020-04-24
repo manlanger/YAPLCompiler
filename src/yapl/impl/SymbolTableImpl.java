@@ -11,11 +11,13 @@ import yapl.lib.YAPLException;
 public class SymbolTableImpl implements Symboltable {
 
 	private Deque<Scope> scopes = new ArrayDeque<>();
+	private boolean isDebugMode = false;
 	
 	@Override
 	public void openScope(boolean isGlobal) {
 		
 		Scope newScope = new ScopeImpl(isGlobal);
+		newScope.openScope();
 		
 		if (!scopes.isEmpty()) {
 			Scope currScope = scopes.pop();
@@ -28,13 +30,18 @@ public class SymbolTableImpl implements Symboltable {
 
 	@Override
 	public void closeScope() {
-		scopes.pop();
+		Scope currScope = scopes.pop();
+		
+		currScope.closeScope();
+		
+		scopes.push(currScope);
 	}
 
 	@Override
 	public void addSymbol(Symbol s) throws YAPLException {
 		Scope currScope = scopes.pop();
 		
+		s.setGlobal(currScope.isGlobal());
 		currScope.addSymbol(s);
 		
 		scopes.push(currScope);
@@ -42,13 +49,30 @@ public class SymbolTableImpl implements Symboltable {
 
 	@Override
 	public Symbol lookup(String name) throws YAPLException {
+		if (isDebugMode) {
+			System.out.println("looking up " + name + " in symbol table...");
+		}
+		
 		if (name == null)
-			throw new YAPLException();
+			throw new YAPLException("identifier " + name + " not declared");
 		
 		for (Scope scope : scopes) {
 			if (scope.hasSymbol(name)) {
+				Symbol symbol = scope.getSymbol(name);
+				
+				if (symbol.getKind() != Symbol.Procedure) {
+					if (!scope.isOpen())
+						return  null;
+				}
+				if (isDebugMode) {
+					System.out.println("found " + name + " in symbol table.");
+				}
 				return scope.getSymbol(name);
 			}
+		}
+		
+		if (isDebugMode) {
+			System.out.println("Did not find " + name + " in symbol table!");
 		}
 		
 		return null;
@@ -71,8 +95,7 @@ public class SymbolTableImpl implements Symboltable {
 
 	@Override
 	public void setDebug(boolean on) {
-		// TODO Auto-generated method stub
-
+		isDebugMode = on;
 	}
 
 }

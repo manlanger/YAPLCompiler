@@ -9,5 +9,9 @@ public interface Scope {
 	public boolean hasSymbol(String name);
 	public Symbol getSymbol(String name);
 	public void setParentScope(Scope s);
+	public void openScope();
+	public void closeScope();
+	public boolean isOpen();
+	public boolean isGlobal();
 	
 }

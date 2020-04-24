@@ -12,6 +12,7 @@ public class ScopeImpl implements Scope {
 	private boolean isGlobal = false;
 	private Symbol parentSymbol = null;
 	private Scope parentScope = null;
+	private boolean isOpen = false;
 	
 	public ScopeImpl(boolean isGlobal) {
 		this.isGlobal = isGlobal;
@@ -19,8 +20,13 @@ public class ScopeImpl implements Scope {
 	
 	@Override
 	public void addSymbol(Symbol s) throws YAPLException {
-		if (symbols.containsKey(s.getName()))
-			throw new YAPLException();
+		if (symbols.containsKey(s.getName())) {
+			Symbol symbol_old = symbols.get(s.getName());
+			
+			if (symbol_old.getKind() != Symbol.Procedure) {
+				throw new YAPLException("symbol " + s.getName() + " already declared in current scope (as " + symbol_old.getKindString() + ")");
+			}
+		}
 		
 		s.setGlobal(isGlobal);
 		symbols.put(s.getName(), s);		
@@ -44,5 +50,25 @@ public class ScopeImpl implements Scope {
 	@Override
 	public void setParentScope(Scope s) {
 		parentScope = s;		
+	}
+
+	@Override
+	public void openScope() {
+		isOpen = true;
+	}
+
+	@Override
+	public void closeScope() {
+		isOpen = false;
+	}
+
+	@Override
+	public boolean isOpen() {
+		return isOpen;
+	}
+
+	@Override
+	public boolean isGlobal() {
+		return isGlobal;
 	}
 }
