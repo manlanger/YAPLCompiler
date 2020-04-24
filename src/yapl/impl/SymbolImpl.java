@@ -14,6 +14,15 @@ public class SymbolImpl implements Symbol {
 	private int offset = -1;
 	private Symbol nextSymbol = null;
 	private boolean returnSeen = false;
+	
+	public SymbolImpl() {
+		
+	}
+	
+	public SymbolImpl(String name, int kind) {
+		this.name = name;
+		this.kind = kind;
+	}
 
 	@Override
 	public int getKind() {
@@ -22,8 +31,24 @@ public class SymbolImpl implements Symbol {
 
 	@Override
 	public String getKindString() {
-		// TODO Auto-generated method stub
-		return null;
+		switch (this.kind) {
+		case 0:
+			return "program";
+		case 1:
+			return "procedure";
+		case 2:
+			return "variable";
+		case 3:
+			return "constant";
+		case 4:
+			return "typename";
+		case 5:
+			return "field";
+		case 6:
+			return "parameter";
+		}
+		
+		return "unknown";
 	}
 
 	@Override
