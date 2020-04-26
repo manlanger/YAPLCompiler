@@ -54,7 +54,6 @@ public class SymbolImpl implements Symbol {
 	@Override
 	public void setKind(int kind) {
 		this.kind = kind;
-
 	}
 
 	@Override

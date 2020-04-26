@@ -29,21 +29,21 @@ import yapl.lib.CompilerMessage;
 import yapl.compiler.ParseException;
 import yapl.compiler.TokenMgrError;
 
-public class YaplParser
+public class YaplScanner
 {
   	public static void main(String args []) throws ParseException
   	{
-      	YaplParser parser = null;
+      	YaplScanner parser = null;
 
 	    if(args.length == 0){
 	    	System.out.println ("YaplParser: Reading input ...");
-	    	parser = new YaplParser(System.in);
+	    	parser = new YaplScanner(System.in);
 	    }
 	    else if(args.length == 1){
 	    	System.out.println ("YaplParser: Reading the file " + args[0] + " ..." );
 
 	        try {
-	          parser = new YaplParser(new java.io.FileInputStream(args[0]));
+	          parser = new YaplScanner(new java.io.FileInputStream(args[0]));
 	        }
 
 	        catch(java.io.FileNotFoundException e) {
@@ -55,7 +55,9 @@ public class YaplParser
 		if (parser == null) {
 		  	System.out.println ("Parser initialization failed!");
 		} else {
+		  try { 
 		  	parser.Start();
+		 } catch (Exception e) { }
 		}
   	}
 }
