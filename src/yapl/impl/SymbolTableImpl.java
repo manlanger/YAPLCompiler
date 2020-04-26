@@ -14,10 +14,8 @@ public class SymbolTableImpl implements Symboltable {
 	private boolean isDebugMode = false;
 	
 	@Override
-	public void openScope(boolean isGlobal) {
-		
+	public void openScope(boolean isGlobal) {		
 		Scope newScope = new ScopeImpl(isGlobal);
-		newScope.openScope();
 		
 		if (!scopes.isEmpty()) {
 			Scope currScope = scopes.pop();
@@ -30,11 +28,7 @@ public class SymbolTableImpl implements Symboltable {
 
 	@Override
 	public void closeScope() {
-		Scope currScope = scopes.pop();
-		
-		currScope.closeScope();
-		
-		scopes.push(currScope);
+		scopes.pop();
 	}
 
 	@Override
@@ -58,15 +52,10 @@ public class SymbolTableImpl implements Symboltable {
 		
 		for (Scope scope : scopes) {
 			if (scope.hasSymbol(name)) {
-				Symbol symbol = scope.getSymbol(name);
-				
-				if (symbol.getKind() != Symbol.Procedure) {
-					if (!scope.isOpen())
-						return  null;
-				}
 				if (isDebugMode) {
 					System.out.println("found " + name + " in symbol table.");
 				}
+				
 				return scope.getSymbol(name);
 			}
 		}
