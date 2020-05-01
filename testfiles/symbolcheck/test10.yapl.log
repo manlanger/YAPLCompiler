@@ -1,0 +1,3 @@
+YAPL compilation: [test10] ERROR 10 (line 9, column 40)YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\symbolcheck\test10.yapl ...
+
+symbol m already declared in current scope (as parameter)
