@@ -19,7 +19,7 @@
     <property name="javacc" location="lib"/>
     <property name="ant-contrib" location="lib/ant-contrib.jar"/>
     <property name="mj-jar" location="mjvm/mj.jar"/>
-    <property name="version" value="symbolcheck"/>
+    <property name="version" value="typecheck"/>
     <property name="yapl" location="testfiles/${version}/test01.yapl"/>
     <property name="outfile" value="${yapl}.mj"/>
     <property name="log" value="${yapl}.log"/>
