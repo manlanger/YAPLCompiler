@@ -14,11 +14,14 @@ public class YAPLException extends Throwable implements CompilerError {
 		this.message = message;
 	}
 	
-	public YAPLException(String message, int errorNumber, Token end_proc) {
+	public YAPLException(String message, int errorNumber, Token token) {
 		this.message = message;
 		this.errorNumber = errorNumber;
-		this.line = end_proc.beginLine;
-		this.column = end_proc.beginColumn;
+		
+		if (token != null) {
+			this.line = token.beginLine;
+			this.column = token.beginColumn;
+		}
 	}
 	
 	@Override

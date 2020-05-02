@@ -30,13 +30,15 @@ import yapl.lib.CompilerMessage;
 import yapl.lib.YAPLException;
 import yapl.compiler.ParseException;
 import yapl.compiler.TokenMgrError;
-import yapl.impl.SymbolImpl;
-import yapl.impl.SymbolTableImpl;
+import yapl.impl.*;
+import yapl.types.BoolType;
+import yapl.types.IntType;
 
 public class YaplParser
 {
     private static String programName = "";
     private static Symboltable symbolTable = new SymbolTableImpl();
+    private static CodeGen codeGen = new CodeGenImpl();
     private static final String predefinedProcedures = "Procedure void writeint(int i);Procedure void writebool(bool b);Procedure void writeln();Procedure int readint();";
 
   	public static void main(String args []) throws ParseException
@@ -173,28 +175,48 @@ AddOp = "+" | "-" .
 MulOp = "*" | "/" | "%" .
 */
 
-void RelOp() :
-{}
+Token RelOp() :
 {
-  ( "<" | "<=" | ">=" | ">" )
+	Token token;
+}
+{
+  	( token = "<" | token = "<=" | token = ">=" | token = ">" )
+  	{
+		return token;
+	}
 }
 
-void EqualOp() :
-{}
+Token EqualOp() :
 {
-  ( "==" | "!=" )
+	Token token;
+}
+{
+  	( token = "==" | token = "!=" )
+    {
+		return token;
+	}
 }
 
-void AddOp() :
-{}
+Token AddOp() :
 {
-  ( "+" | "-" )
+	Token token;
+}
+{
+  	( token = "+" | token = "-" )
+  	{
+  		return token;
+  	}
 }
 
-void MulOp() :
-{}
+Token MulOp() :
 {
-  ( "*" | "/" | "%" )
+	Token token;
+}
+{
+  	( token = "*" | token = "/" | token = "%" )
+  	{
+    	return token;
+  	}
 }
 
 /*
@@ -203,10 +225,29 @@ Selector = ( "[" Expr "]" | "." ident ) [ Selector ] .
 ArrayLen = "#" ident [ Selector ] .
 */
 
-void Literal() :
-{}
+Attrib Literal() :
 {
-  ( "True" | "False" | < NUMBER > )
+	Token token;
+	Attrib attrib;
+}
+{
+  	<TRUE>
+	{
+	  	attrib = new AttribImpl(Attrib.Constant, new BoolType(true));
+		return attrib;
+	}
+	
+	| <FALSE>
+	{
+		attrib = new AttribImpl(Attrib.Constant, new BoolType(false));
+		return attrib;
+	}
+		
+	| token = <NUMBER>
+	{
+	 	attrib = new AttribImpl(Attrib.Constant, new IntType(Integer.parseInt(token.image)));
+	  	return attrib;
+	}
 }
 
 void Selector() throws YAPLException:
@@ -215,14 +256,16 @@ void Selector() throws YAPLException:
   ( "[" Expr() "]" | "." < IDENT > ) [ Selector() ]
 }
 
-void ArrayLen() throws YAPLException:
+Attrib ArrayLen() throws YAPLException:
 {
 	Token token;
+	Attrib attrib;
 }
 {
   	"#" token = <IDENT>
   	{
 		Symbol symbol = symbolTable.lookup(token.image);
+		attrib = new AttribImpl(symbol);
   		
     	if (symbol == null) {
     		throw new YAPLException("identifier " + token.image + " not declared", CompilerError.IdentNotDecl, token);
@@ -235,7 +278,12 @@ void ArrayLen() throws YAPLException:
     	if (symbol.getKind() == Symbol.Procedure) {
     	  	throw new YAPLException("illegal use of procedure " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
+
+    	return codeGen.arrayLength(attrib);
   	} [ Selector() ]
+  	{
+  		return attrib;
+  	}
 }
 
 /*
@@ -246,14 +294,16 @@ AddExpr = MulExpr { AddOp MulExpr } .
 RelExpr = AddExpr [ RelOp AddExpr ] .
 */
 
-void PrimaryExpr() throws YAPLException:
+Attrib PrimaryExpr() throws YAPLException:
 {
 	Token token;
+	Attrib attrib = null;
 }
 {
-	( Literal() | "(" Expr() ")" | LOOKAHEAD(2) ProcedureCall() | token = <IDENT>
+	( attrib = Literal() | "(" attrib = Expr() ")" | LOOKAHEAD(2) ProcedureCall() | token = <IDENT>
   	{
   		Symbol symbol = symbolTable.lookup(token.image);
+  		attrib = new AttribImpl(symbol);
   		
     	if (symbol == null) {
     		throw new YAPLException("identifier " + token.image + " not declared", CompilerError.IdentNotDecl, token);
@@ -263,31 +313,68 @@ void PrimaryExpr() throws YAPLException:
     	  	throw new YAPLException("illegal use of procedure " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
   	}
-  	[ Selector() ] | ArrayLen() )
+  	[ Selector() ] | attrib = ArrayLen() )
+  	{
+  		return attrib;
+  	}
 }
 
-void UnaryExpr() throws YAPLException:
-{}
+Attrib UnaryExpr() throws YAPLException:
 {
-  [ AddOp() ] PrimaryExpr()
+  	Token op = null;
+	Attrib attrib;
+}
+{
+  	[ op = AddOp() ] attrib = PrimaryExpr()
+  	{
+  	  	codeGen.op1(op, attrib);
+		return attrib;
+  	}
 }
 
-void MulExpr() throws YAPLException:
-{}
+Attrib MulExpr() throws YAPLException:
 {
-  UnaryExpr() ( MulOp() UnaryExpr() )*
+	Attrib a1, a2;
+	Token op;
+}
+{
+  	a1 = UnaryExpr() ( op = MulOp() a2 = UnaryExpr()
+  	{
+  		codeGen.op2(a1, op, a2);
+  	} )*
+  	{
+  		return a1;
+  	}
 }
 
-void AddExpr() throws YAPLException:
-{}
+Attrib AddExpr() throws YAPLException:
+{  
+	Attrib a1, a2;
+	Token op;
+}
 {
-  MulExpr() ( AddOp() MulExpr() )*
+  	a1 = MulExpr() ( op = AddOp() a2 = MulExpr()
+  	{
+  		codeGen.op2(a1, op, a2);
+  	} )*
+  	{
+  		return a1;
+  	}
 }
 
-void RelExpr() throws YAPLException:
-{}
+Attrib RelExpr() throws YAPLException:
 {
-  AddExpr() [ RelOp() AddExpr() ]
+  	Attrib a1, a2;
+	Token op;
+}
+{
+  	a1 = AddExpr() [ op = RelOp() a2 = AddExpr()
+  	{
+  		codeGen.relOp(a1, op, a2);
+  	} ]
+  	{
+  		return a1;
+  	}
 }
 
 /*
@@ -297,28 +384,52 @@ CreationExpr = "new" NonArrayType { "[" Expr "]" } .
 Expr = CondAndExpr { "Or" CondAndExpr } | CreationExpr .
 */
 
-void EqualExpr() throws YAPLException:
-{}
+Attrib EqualExpr() throws YAPLException:
 {
-  RelExpr() [ EqualOp() RelExpr() ]
+   	Attrib a1, a2;
+	Token op;
+}
+{
+	a1 = RelExpr() [ op = EqualOp() a2 = RelExpr()
+	{
+		codeGen.equalOp(a1, op, a2);
+	} ]
+	{
+		return a1;
+	}
 }
 
-void CondAndExpr() throws YAPLException:
-{}
+Attrib CondAndExpr() throws YAPLException:
 {
-  EqualExpr() ( "And" EqualExpr() )*
+	Attrib a1, a2;
+}
+{
+  	a1 = EqualExpr() ( "And" a2 = EqualExpr() )*
+  	{
+  		return a1;
+  	}
 }
 
-void CreationExpr() throws YAPLException:
-{}
+Attrib CreationExpr() throws YAPLException:
 {
-  "new" NonArrayType() ( "[" Expr() "]" )*
+  	Attrib attrib;
+}
+{
+  	"new" attrib = NonArrayType() ( "[" Expr() "]" )*
+  	{
+  		return attrib;
+  	}    
 }
 
-void Expr() throws YAPLException:
-{}
+Attrib Expr() throws YAPLException:
 {
-  CondAndExpr()  ( "Or" CondAndExpr() )* | CreationExpr()
+	Attrib a1, a2;
+}
+{
+  	( a1 = CondAndExpr()  ( "Or" a2 = CondAndExpr() )* | a1 = CreationExpr())
+  	{
+  		return a1;
+  	}
 }
 
 /*
@@ -424,14 +535,16 @@ void Block() throws YAPLException:
 NonArrayType = "int" | "bool" | ident .
 */
 
-void NonArrayType() throws YAPLException:
+Attrib NonArrayType() throws YAPLException:
 {
 	Token token;
+	Attrib attrib = null;
 }
 {
 	( "int" | "bool" | token = <IDENT>
 	{
 		Symbol symbol = symbolTable.lookup(token.image);
+		attrib = new AttribImpl(symbol);
   		
     	if (symbol == null) {
     		throw new YAPLException("identifier " + token.image + " not declared", CompilerError.IdentNotDecl, token);
@@ -442,6 +555,9 @@ void NonArrayType() throws YAPLException:
     	}
 	}
 	)
+	{
+		return attrib;
+	}
 }
 
 void Type() throws YAPLException:
@@ -458,12 +574,14 @@ void ReturnType() throws YAPLException:
 
 void ConstDecl() throws YAPLException:
 {
+  	Symbol symbol;
 	Token token;
+	Attrib attrib;
 }
 {
     "Const" token = <IDENT>
     {
-      	Symbol symbol = new SymbolImpl(token.image, Symbol.Constant);
+      	symbol = new SymbolImpl(token.image, Symbol.Constant);
       	
     	try { 
     		symbolTable.addSymbol(symbol);
@@ -471,7 +589,10 @@ void ConstDecl() throws YAPLException:
     	  	throw new YAPLException(e.getMessage(), CompilerError.SymbolExists, token);
     	} 
     }
-    "=" Literal() ";"
+    "=" attrib = Literal()
+    {
+    	symbol.setType(attrib.getType());
+    } ";"
 }
 
 void VarDecl() throws YAPLException:

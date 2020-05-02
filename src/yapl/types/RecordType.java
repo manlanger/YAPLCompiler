@@ -1,5 +1,7 @@
 package yapl.types;
 
-public class RecordType {
+import yapl.lib.Type;
+
+public class RecordType extends Type {
 
 }
