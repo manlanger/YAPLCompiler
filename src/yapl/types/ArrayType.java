@@ -1,5 +1,7 @@
 package yapl.types;
 
-public class ArrayType {
+import yapl.lib.Type;
+
+public class ArrayType extends Type {
 
 }
