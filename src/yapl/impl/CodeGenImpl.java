@@ -9,7 +9,9 @@ import yapl.types.ArrayType;
 import yapl.types.BoolType;
 import yapl.types.IntType;
 import yapl.types.RecordType;
+import yapl.types.VoidType;
 import yapl.Token;
+import yapl.lib.Type;
 
 public class CodeGenImpl implements CodeGen {
 
@@ -81,8 +83,9 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void arrayOffset(Attrib arr, Attrib index) throws YAPLException {
-		// TODO Auto-generated method stub
-
+		if (!(arr.getType() instanceof ArrayType)) {
+			throw new YAPLException(YAPLException.Internal);
+		}
 	}
 
 	@Override
@@ -93,13 +96,24 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib arrayLength(Attrib arr) throws YAPLException {
-		// TODO Auto-generated method stub
-		return null;
+		return new AttribImpl(new IntType());
 	}
 
 	@Override
 	public void assign(Attrib lvalue, Attrib expr) throws YAPLException {
-		// TODO Auto-generated method stub
+		if (lvalue.isConstant()) {
+			throw new YAPLException("l-value is read-only", CompilerError.ReadonlyAssign, null);
+		}
+		
+		if (expr.getType() instanceof VoidType) {
+			throw new YAPLException("using procedure proc (not a function) in expression", CompilerError.ProcNotFuncExpr, null);
+		}
+		
+		if (!lvalue.getType().isCompatibleTo(expr.getType())) {
+			System.out.println("Comparing types: " + lvalue.getType() + " VS " + expr.getType());
+			
+			throw new YAPLException("type mismatch in assignment", CompilerError.TypeMismatchAssign, null);
+		}
 
 	}
 
@@ -118,6 +132,7 @@ public class CodeGenImpl implements CodeGen {
 	@Override
 	public Attrib op2(Attrib x, Token op, Attrib y) throws YAPLException {
 		System.out.println("op2 " + x.toString() + " " + op.image + " " + y.toString());
+		
 		if (x.getType() instanceof IntType && y.getType() instanceof IntType) {
 			
 		} else {
@@ -139,7 +154,8 @@ public class CodeGenImpl implements CodeGen {
 		}
 		
 		x.setConstant(x.isConstant() && y.isConstant());
-		return x;
+		
+		return new AttribImpl(new BoolType());
 	}
 
 	@Override
@@ -155,7 +171,8 @@ public class CodeGenImpl implements CodeGen {
 		}
 		
 		x.setConstant(x.isConstant() && y.isConstant());
-		return x;
+		
+		return new AttribImpl(new BoolType());
 	}
 
 	@Override
@@ -178,8 +195,7 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib callProc(Symbol proc, Attrib[] args) throws YAPLException {
-		// TODO Auto-generated method stub
-		return null;
+		return new AttribImpl(proc.getType());
 	}
 
 	@Override

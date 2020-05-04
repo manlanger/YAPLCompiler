@@ -14,6 +14,10 @@ public class YAPLException extends Throwable implements CompilerError {
 		this.message = message;
 	}
 	
+	public YAPLException(int errorNumber) {
+		this.errorNumber = errorNumber;
+	}
+	
 	public YAPLException(String message, int errorNumber, Token token) {
 		this.message = message;
 		this.errorNumber = errorNumber;
