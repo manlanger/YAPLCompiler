@@ -13,6 +13,10 @@ public class AttribImpl implements Attrib {
 	private boolean isGlobal;
 	private int offset;
 	private byte register;
+	
+	public AttribImpl(Type type) {
+		this.type = type;
+	}
 
 	public AttribImpl(byte attribType, Type type) {
 		this.kind = attribType;

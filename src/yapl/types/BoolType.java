@@ -6,6 +6,10 @@ public class BoolType extends Type {
 	
 	private boolean value;
 	
+	public BoolType() {
+	
+	}
+	
 	public BoolType(boolean value) {
 		this.value = value;
 	}
