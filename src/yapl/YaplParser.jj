@@ -250,25 +250,31 @@ Attrib Literal() :
 	}
 }
 
-Attrib Selector(Attrib array) throws YAPLException:
+Attrib Selector(Attrib a) throws YAPLException:
 {
- 	Token token;
+ 	Token token, dot;
 	Attrib index = null, attrib = null;
 }
 {
   	( token = "[" index = Expr() "]"
   	{
   	  	try { 
-			codeGen.arrayOffset(array, index);
+			codeGen.arrayOffset(a, index);
 
-			attrib = new AttribImpl(Attrib.ArrayElement, ((ArrayType)array.getType()).getElementType());
+			attrib = new AttribImpl(Attrib.ArrayElement, ((ArrayType)a.getType()).getElementType());
 			
 		} catch (YAPLException e) {
 		  	throw new YAPLException("expression before " + token.image + " is not an array type", CompilerError.SelectorNotArray, token);
 		}
-  	} | "." token = <IDENT> ) [ attrib = Selector(array)
+  	} | dot = "." token = <IDENT>
   	{
-  	  	attrib = new AttribImpl(Attrib.ArrayElement, array.getType());
+  		if (!(a.getType() instanceof RecordType)) {
+  			throw new YAPLException("expression before " + dot.image + " is not a record type", CompilerError.SelectorNotRecord, token);
+  		}
+  	}
+  	) [ attrib = Selector(a)
+  	{
+  	  	attrib = new AttribImpl(Attrib.ArrayElement, a.getType());
   	} ]
   	{
   	  	if (index != null) { 
@@ -329,7 +335,7 @@ Attrib PrimaryExpr() throws YAPLException:
 	Attrib attrib = null;
 }
 {
-	( attrib = Literal() | "(" attrib = Expr() ")" | LOOKAHEAD(2) attrib = ProcedureCall() | token = <IDENT>
+	( attrib = Literal() | "(" attrib = Expr() ")" | LOOKAHEAD(2) attrib = ProcedureCall(true)	| token = <IDENT>
   	{
   		Symbol symbol = symbolTable.lookup(token.image);
   		attrib = new AttribImpl(symbol);
@@ -463,9 +469,17 @@ Attrib CreationExpr() throws YAPLException:
 Attrib Expr() throws YAPLException:
 {
 	Attrib a1, a2;
+	Token token;
 }
 {
-  	( a1 = CondAndExpr()  ( "Or" a2 = CondAndExpr() )* | a1 = CreationExpr())
+  	( a1 = CondAndExpr()  ( token = "Or" a2 = CondAndExpr()
+  	{
+  		if (!((a1.getType() instanceof BoolType) && (a2.getType() instanceof BoolType)))
+  		{
+  			throw new YAPLException("illegal operand types for binary operator Or", CompilerError.IllegalOp2Type, token);
+  		}
+  	}
+  	)* | a1 = CreationExpr())
   	{
   		return a1;
   	}
@@ -482,7 +496,7 @@ void ArgumentList() throws YAPLException:
   Expr() ( "," Expr() )*
 }
 
-Attrib ProcedureCall() throws YAPLException:
+Attrib ProcedureCall(boolean isFunction) throws YAPLException:
 {
 	Token token;
 	Attrib attrib;
@@ -500,7 +514,10 @@ Attrib ProcedureCall() throws YAPLException:
     	if (symbol.getKind() != Symbol.Procedure) {
     	  	throw new YAPLException("illegal use of variable " + token.image, CompilerError.SymbolIllegalUse, token);
     	}
-			
+
+    	if (isFunction && (symbol.getType() instanceof VoidType)) {
+		  	throw new YAPLException("using procedure " + symbol.getName() + " (not a function) in expression", CompilerError.ProcNotFuncExpr, token); 
+		}
   	} "(" [ ArgumentList() ] ")"
   	{
   		return attrib;
@@ -537,21 +554,48 @@ void Assignment() throws YAPLException:
 }
 
 void IfStatement() throws YAPLException:
-{}
 {
-    "If" Expr() "Then" StatementList() [ "Else" StatementList() ] "EndIf"
+	Attrib attrib;
+	Token token;
+}
+{
+    token = "If" attrib = Expr()
+    {
+    	if (!(attrib.getType() instanceof BoolType)) {
+    	  	throw new YAPLException("Condition not boolean expression", CompilerError.CondNotBool, token);
+    	}
+    	
+    } "Then" StatementList() [ "Else" StatementList() ] "EndIf"
 }
 
 void WhileStatement() throws YAPLException:
-{}
 {
-    "While" Expr() "Do" StatementList() "EndWhile"
+	Attrib attrib;
+	Token token;
+}
+{
+    token = "While" attrib = Expr()
+    {
+    	if (!(attrib.getType() instanceof BoolType)) {
+    	  	throw new YAPLException("Condition not boolean expression", CompilerError.CondNotBool, token);
+    	}
+    }
+    "Do" StatementList() "EndWhile"
 }
 
 void ReturnStatement() throws YAPLException:
-{}
 {
-    "Return" [ Expr() ]
+	Attrib attrib;
+	Token token;
+}
+{
+    token = "Return" [ attrib = Expr()
+    {
+    	if (attrib.getType() instanceof VoidType) {
+    	  	throw new YAPLException("Return value must not be void", CompilerError.IllegalRetValProc, token);
+    	}
+    }
+    ]
 }
 
 void WriteStatement() :
@@ -563,7 +607,7 @@ void WriteStatement() :
 void Statement() throws YAPLException:
 {}
 {
-    IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() | LOOKAHEAD(2) Assignment() |  LOOKAHEAD(2) ProcedureCall() | Block()
+    IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() | LOOKAHEAD(2) Assignment() |  LOOKAHEAD(2) ProcedureCall(false) | Block()
 }
 
 void StatementList() throws YAPLException:
@@ -705,11 +749,14 @@ void VarDecl() throws YAPLException:
 void TypeDecl() throws YAPLException:
 {
 	Token token;
+	Type type;
 }
 {
     "Record" token = <IDENT>
     {
     	Symbol symbol = new SymbolImpl(token.image, Symbol.Typename);
+    	type = new RecordType();
+    	symbol.setType(type);
 
       	try { 
     		symbolTable.addSymbol(symbol);
@@ -733,12 +780,14 @@ void Decl() throws YAPLException:
 
 void FormalParam() throws YAPLException:
 {
+  	Type type;
 	Token token;
 }
 {
-    Type() token = <IDENT>
+    type = Type() token = <IDENT>
     {
     	Symbol symbol = new SymbolImpl(token.image, Symbol.Parameter);
+    	symbol.setType(type);
     	
 		try { 
     		symbolTable.addSymbol(symbol);

@@ -110,8 +110,6 @@ public class CodeGenImpl implements CodeGen {
 		}
 		
 		if (!lvalue.getType().isCompatibleTo(expr.getType())) {
-			System.out.println("Comparing types: " + lvalue.getType() + " VS " + expr.getType());
-			
 			throw new YAPLException("type mismatch in assignment", CompilerError.TypeMismatchAssign, null);
 		}
 
@@ -131,7 +129,7 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib op2(Attrib x, Token op, Attrib y) throws YAPLException {
-		System.out.println("op2 " + x.toString() + " " + op.image + " " + y.toString());
+		System.out.println("op2 " + x.getType() + " " + op.image + " " + y.getType());
 		
 		if (x.getType() instanceof IntType && y.getType() instanceof IntType) {
 			
