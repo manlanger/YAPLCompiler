@@ -86,8 +86,12 @@ public class SymbolTableImpl implements Symboltable {
 	public Symbol getNearestParentSymbol(int kind) {
 		for (Scope scope:
 			 scopes) {
+			if(scope.isGlobal())
+			{
+				continue;
+			}
 			Symbol s = scope.GetParentSymbol();
-			if(s != null && s.getKind() == kind && !s.isGlobal())
+			if(s != null && s.getKind() == kind)
 			{
 				return s;
 			}

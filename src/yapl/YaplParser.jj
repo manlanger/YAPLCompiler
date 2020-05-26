@@ -255,6 +255,7 @@ Attrib Selector(Attrib a) throws YAPLException:
 {
  	Token token, dot;
 	Attrib index = null, attrib = null;
+	Attrib childAttrib;
 }
 {
   	( token = "[" index = Expr() "]"
@@ -273,9 +274,9 @@ Attrib Selector(Attrib a) throws YAPLException:
   			throw new YAPLException("expression before " + dot.image + " is not a record type", CompilerError.SelectorNotRecord, token);
   		}
   	}
-  	) [ attrib = Selector(a)
+  	) [ attrib = Selector(attrib)
   	{
-  	  	attrib = new AttribImpl(Attrib.ArrayElement, a.getType());
+  	  	//attrib = new AttribImpl(Attrib.ArrayElement, a.getType());
   	} ]
   	{
   	  	if (index != null) { 
@@ -292,6 +293,7 @@ Attrib ArrayLen() throws YAPLException:
 {
 	Token ht, token;
 	Attrib attrib;
+	Attrib childAttrib;
 }
 {
   	ht = "#" token = <IDENT>
@@ -315,10 +317,14 @@ Attrib ArrayLen() throws YAPLException:
     		throw new YAPLException("expression after " + ht.image + " is not an array type", CompilerError.ArrayLenNotArray, token);
     	}
 
-    	return codeGen.arrayLength(attrib);
-  	} [ Selector(attrib) ]
+  	} [ attrib = Selector(attrib) ]
   	{
-  		return attrib;
+        System.out.println("Hello World");
+        if(!(attrib.getType() instanceof ArrayType))
+        {
+            throw new YAPLException("expression after " + ht.image + " is not an array type", CompilerError.ArrayLenNotArray, token);
+        }
+  		return codeGen.arrayLength(attrib);
   	}
 }
 
@@ -458,10 +464,10 @@ Attrib CreationExpr() throws YAPLException:
   		if (!(index.getType() instanceof IntType)) {
   			throw new YAPLException("bad array selector " + index, CompilerError.BadArraySelector, token);
   		}
+  		type = new ArrayType(type);
   	}
   	)*
   	{
-  	  	type = new ArrayType(type);
   	  	attrib = new AttribImpl(Attrib.ArrayElement, type);
   		return attrib;
   	}
@@ -587,29 +593,29 @@ Attrib ProcedureCall(boolean isFunction) throws YAPLException:
 
 void Assignment() throws YAPLException:
 {
-	Token token;
+	Token token2, token3;
 	Attrib attrib, value;
 }
 {
-    token = < IDENT >
+    token2 = < IDENT >
     {
-    	Symbol symbol = symbolTable.lookup(token.image);
+    	Symbol symbol = symbolTable.lookup(token2.image);
     	attrib = new AttribImpl(symbol);
 
     	if (symbol == null) {
-    		throw new YAPLException("identifier " + token.image + " not declared", CompilerError.IdentNotDecl, token);
+    		throw new YAPLException("identifier " + token2.image + " not declared", CompilerError.IdentNotDecl, token2);
     	}
 
     	if (symbol.getKind() != Symbol.Variable && symbol.getKind() != Symbol.Parameter) {
-    		throw new YAPLException("illegal use of " + symbol.getKindString() + " " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
+    		throw new YAPLException("illegal use of " + symbol.getKindString() + " " + symbol.getName(), CompilerError.SymbolIllegalUse, token2);
     	}
     }
-    [ attrib = Selector(attrib) ] ":=" value = Expr()
+    [ attrib = Selector(attrib) ] token3 = ":=" value = Expr()
     {
      	try { 
       		codeGen.assign(attrib, value);
      	} catch (YAPLException e) {
-     	  	throw new YAPLException(e.getMessage(), e.errorNumber(), token);
+     	  	throw new YAPLException(e.getMessage(), e.errorNumber(), token3);
      	}
     }
 }
@@ -650,30 +656,40 @@ boolean ReturnStatement() throws YAPLException:
 	Token token2;
 	Token token3 = token;
 	Symbol procedure = symbolTable.getNearestParentSymbol(Symbol.Procedure);
-    Attrib procAttrib = new AttribImpl(procedure.getType());
+    Attrib procAttrib = null;
+    if(procedure != null)
+    {
+          procAttrib =   new AttribImpl(procedure.getType());
+    }
 }
 {
     token2 = "Return" [ attrib = Expr()
     {
         token3 = token;
-    	if (attrib.getType() instanceof VoidType || procAttrib.getType() instanceof VoidType) {
+    	if (attrib.getType() instanceof VoidType || procAttrib != null && procAttrib.getType() instanceof VoidType) {
     	  	throw new YAPLException("Return value must not be void", CompilerError.IllegalRetValProc, token2);
-    	}
+    	} else if(procAttrib == null && !(attrib.getType() instanceof VoidType))
+        {
+            throw new YAPLException("illegal return value in main program", CompilerError.IllegalRetValMain, token3);
+        }
 
     }
     ]
     {
-
-        if(attrib != null)
+        if(procAttrib != null)
         {
-            if(!procAttrib.getType().equals(attrib.getType()))
+            if(attrib != null )
             {
-                throw new YAPLException("returning none or invalid type from function " + procedure.getName(), CompilerError.InvalidReturnType, token3);
+                if(!procAttrib.getType().equals(attrib.getType()))
+                {
+                    throw new YAPLException("returning none or invalid type from function " + procedure.getName(), CompilerError.InvalidReturnType, token3);
+                }
+            }else if(!(procAttrib.getType() instanceof VoidType))
+            {
+                throw new YAPLException("returning none or invalid type from function " + procedure.getName(), CompilerError.InvalidReturnType, token);
             }
-        }else if(!(procAttrib.getType() instanceof VoidType))
-        {
-            throw new YAPLException("returning none or invalid type from function " + procedure.getName(), CompilerError.InvalidReturnType, token);
         }
+
 
         return true;
     }
