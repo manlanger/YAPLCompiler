@@ -14,4 +14,8 @@ public class IntType extends Type {
 		this.value = value;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof IntType;
+	}
 }

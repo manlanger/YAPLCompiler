@@ -12,6 +12,7 @@ public class SymbolTableImpl implements Symboltable {
 
 	private Deque<Scope> scopes = new ArrayDeque<>();
 	private boolean isDebugMode = false;
+	private Symbol lastInsertedSymbol;
 	
 	@Override
 	public void openScope(boolean isGlobal) {		
@@ -39,6 +40,11 @@ public class SymbolTableImpl implements Symboltable {
 		currScope.addSymbol(s);
 		
 		scopes.push(currScope);
+		if(lastInsertedSymbol != null)
+		{
+			lastInsertedSymbol.setNextSymbol(s);
+		}
+		lastInsertedSymbol = s;
 	}
 
 	@Override
@@ -78,6 +84,14 @@ public class SymbolTableImpl implements Symboltable {
 
 	@Override
 	public Symbol getNearestParentSymbol(int kind) {
+		for (Scope scope:
+			 scopes) {
+			Symbol s = scope.GetParentSymbol();
+			if(s != null && s.getKind() == kind && !s.isGlobal())
+			{
+				return s;
+			}
+		}
 		// TODO Auto-generated method stub
 		return null;
 	}
