@@ -362,7 +362,6 @@ Attrib PrimaryExpr() throws YAPLException:
 {
 	Token token;
 	Attrib attrib = null;
-	boolean opensRecordScope = false;
 }
 {
 	( attrib = Literal() | "(" attrib = Expr() ")" | LOOKAHEAD(2) attrib = ProcedureCall(true)	| token = <IDENT>
@@ -378,20 +377,11 @@ Attrib PrimaryExpr() throws YAPLException:
     	  	throw new YAPLException("illegal use of procedure " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
 
-    	if(attrib.getType() instanceof RecordType)
-        {
-            symbolTable.openScope(false);
-            symbolTable.setParentSymbol(symbol);
-            opensRecordScope = true;
-        }
+
   	}
   	[ attrib = Selector(attrib) ] | attrib = ArrayLen() )
   	{
-        if(opensRecordScope)
-        {
-            opensRecordScope = false;
-            symbolTable.closeScope();
-        }
+
   		return attrib;
   	}
 }
@@ -635,7 +625,6 @@ void Assignment() throws YAPLException:
 {
 	Token token2, token3;
 	Attrib attrib, value;
-	boolean recordAssignment = false;
 }
 {
     token2 = < IDENT >
@@ -651,12 +640,6 @@ void Assignment() throws YAPLException:
     		throw new YAPLException("illegal use of " + symbol.getKindString() + " " + symbol.getName(), CompilerError.SymbolIllegalUse, token2);
     	}
 
-    	if(attrib.getType() instanceof RecordType)
-        {
-            recordAssignment = true;
-            symbolTable.openScope(false);
-            symbolTable.setParentSymbol(symbol);
-        }
     }
     [ attrib = Selector(attrib) ] token3 = ":=" value = Expr()
     {
@@ -665,11 +648,6 @@ void Assignment() throws YAPLException:
      	} catch (YAPLException e) {
      	  	throw new YAPLException(e.getMessage(), e.errorNumber(), token3);
      	}
-     	 if(recordAssignment)
-        {
-            recordAssignment = false;
-            symbolTable.closeScope();
-        }
     }
 }
 
