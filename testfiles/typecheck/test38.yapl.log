@@ -1,0 +1,6 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test38.yapl ...
+-
+op2 yapl.types.IntType@546a03af * yapl.types.IntType@721e0f4f
+op2 yapl.types.IntType@546a03af / yapl.types.ArrayType@28864e92
+YAPL compilation: [test38] ERROR 24 (line 11, column 19)
+illegal operand types for binary operator /

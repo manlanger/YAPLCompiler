@@ -1,0 +1,8 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test13.yapl ...YAPL compilation: [test13] ERROR 29 (line 12, column 5)
+
+type mismatch in assignmentop2 yapl.types.IntType@17d99928 % yapl.types.IntType@3834d63f
+
+op2 yapl.types.IntType@1ae369b7 * yapl.types.IntType@17d99928
+op2 yapl.types.IntType@1ae369b7 + yapl.types.IntType@6fffcba5
+op2 yapl.types.IntType@34340fab - yapl.types.IntType@2aafb23c
+equalOp yapl.impl.AttribImpl@2b80d80f != yapl.impl.AttribImpl@3ab39c39

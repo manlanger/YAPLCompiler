@@ -1,0 +1,4 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test29.yapl ...
+relOp yapl.impl.AttribImpl@5d3411d > yapl.impl.AttribImpl@2471cca7
+YAPL compilation: [test29] ERROR 33 (line 12, column 5)
+Condition not boolean expression

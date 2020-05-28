@@ -1,0 +1,7 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test15.yapl ...YAPL compilation: [test15] ERROR 24 (line 11, column 37)
+illegal operand types for binary operator Or
+
+op2 yapl.types.IntType@3aa9e816 - yapl.types.IntType@17d99928
+equalOp yapl.impl.AttribImpl@3834d63f == yapl.impl.AttribImpl@1ae369b7
+relOp yapl.impl.AttribImpl@6fffcba5 < yapl.impl.AttribImpl@34340fab
+op2 yapl.types.IntType@3aa9e816 / yapl.types.IntType@2aafb23c

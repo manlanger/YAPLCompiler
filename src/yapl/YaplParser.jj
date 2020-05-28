@@ -33,12 +33,14 @@ import yapl.compiler.TokenMgrError;
 import yapl.lib.Type;
 import yapl.impl.*;
 import yapl.types.*;
+import java.io.FileOutputStream;
 
 public class YaplParser
 {
     private static String programName = "";
     private static Symboltable symbolTable = new SymbolTableImpl();
-    private static CodeGen codeGen = new CodeGenImpl();
+    private static BackendBinSM backend = new BackendMJ();
+    private static CodeGen codeGen = new CodeGenImpl(backend);
     private static final String predefinedProcedures = "Procedure void writeint(int i);Procedure void writebool(bool b);Procedure void writeln();Procedure int readint();";
 
   	public static void main(String args []) throws ParseException
@@ -58,7 +60,7 @@ public class YaplParser
 	    	System.out.println ("YaplParser: Reading input ...");
 	    	parser = new YaplParser(System.in);
 	    }
-	    else if(args.length == 1){
+	    else {
 	        try {
 	          parser.ReInit(new java.io.FileInputStream(args[0]));
 	          System.out.println ("YaplParser: Reading the file " + args[0] + " ..." );
@@ -74,6 +76,7 @@ public class YaplParser
 		    try {
 		        parser.Start();
 		        CompilerMessage.printOK(programName);
+		        backend.writeObjectFile(new FileOutputStream(args[1]));
 		    }catch (Throwable e)
 		    {
                 CompilerMessage.printError((CompilerError) e, programName);
@@ -520,6 +523,7 @@ Attrib ProcedureCall(boolean isFunction) throws YAPLException:
 		}
   	} "(" [ ArgumentList() ] ")"
   	{
+  	  	backend.callProc(token.image);
   		return attrib;
   	}
 }
@@ -598,10 +602,15 @@ void ReturnStatement() throws YAPLException:
     ]
 }
 
-void WriteStatement() :
-{}
+void WriteStatement() throws YAPLException:
 {
-    "Write" < STRING >
+	Token token;
+}
+{
+    "Write" token = <STRING>
+    {
+		codeGen.writeString(token.image);     
+    }
 }
 
 void Statement() throws YAPLException:
@@ -809,11 +818,12 @@ Attrib Procedure() throws YAPLException :
   	Type returnType;
   	Token start_proc;
   	Token end_proc;
+  	Symbol symbol;
 }
 {
     "Procedure" returnType = ReturnType() start_proc = <IDENT>
     {
-    	Symbol symbol = new SymbolImpl(start_proc.image, Symbol.Procedure);
+    	symbol = new SymbolImpl(start_proc.image, Symbol.Procedure);
 		attrib = new AttribImpl(returnType);
 		symbol.setType(returnType);
     	
@@ -826,8 +836,13 @@ Attrib Procedure() throws YAPLException :
     	symbolTable.openScope(false);
     	symbolTable.setParentSymbol(symbol);
     }
-     "(" [ FormalParamList() ] ")" Block() end_proc = <IDENT>
+     "(" [ FormalParamList() ] ")"
      {
+       	codeGen.enterProc(symbol);
+     }
+     Block() end_proc = <IDENT>
+     {
+       	codeGen.exitProc(symbol);
        	if (!start_proc.image.equals(end_proc.image))
        		throw new YAPLException("End " + end_proc.image + " does not match Procedure " + start_proc.image, CompilerError.EndIdentMismatch, end_proc);
        		
@@ -842,20 +857,27 @@ void Program() throws YAPLException:
 {
  	Token start_prog;
   	Token end_prog;
+  	Symbol symbol;
 }
 {
     "Program" start_prog = <IDENT>
     {
     	programName = start_prog.toString();
-    	Symbol symbol = new SymbolImpl(start_prog.image, Symbol.Program);
+    	symbol = new SymbolImpl(start_prog.image, Symbol.Program);
 		symbolTable.openScope(true);
     	symbolTable.setParentSymbol(symbol);
     }
     (Decl() | Procedure())*
-    "Begin" StatementList() "End" end_prog = <IDENT>
+    "Begin"
+    {
+      	codeGen.enterProc(symbol);
+    }
+    StatementList()
+    "End" end_prog = <IDENT>
     {
     	if (!start_prog.image.equals(end_prog.image))
        		throw new YAPLException("End " + end_prog.image + " does not match Program " + start_prog.image, CompilerError.EndIdentMismatch, end_prog);
+       	codeGen.exitProc(symbol);
     } "."
 }
 
@@ -870,11 +892,12 @@ Attrib PreDefinedProcedure() throws YAPLException:
   	Type type;
   	Attrib attrib;
 	Token token;
+	Symbol symbol;
 } 
 {
 	"Procedure" type = ReturnType() token = <IDENT>
     {
-    	Symbol symbol = new SymbolImpl(token.image, Symbol.Procedure);
+    	symbol = new SymbolImpl(token.image, Symbol.Procedure);
 		attrib = new AttribImpl(type);
 		symbol.setType(type);
     	symbolTable.openScope(true);

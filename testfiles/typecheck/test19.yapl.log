@@ -1,0 +1,6 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test19.yapl ...
+op2 yapl.types.IntType@3aa9e816 * yapl.types.IntType@17d99928
+op2 yapl.types.IntType@3aa9e816 + yapl.types.IntType@3834d63f
+op2 yapl.types.IntType@1ae369b7 - yapl.types.IntType@6fffcba5
+YAPL compilation: [test19] ERROR 29 (line 17, column 5)
+type mismatch in assignment
