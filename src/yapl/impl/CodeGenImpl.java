@@ -1,6 +1,7 @@
 package yapl.impl;
 
 import yapl.interfaces.Attrib;
+import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
 import yapl.interfaces.CompilerError;
 import yapl.interfaces.Symbol;
@@ -14,6 +15,12 @@ import yapl.Token;
 import yapl.lib.Type;
 
 public class CodeGenImpl implements CodeGen {
+	
+	private BackendBinSM backend;
+	
+	public CodeGenImpl(BackendBinSM backend) {
+		this.backend = backend;
+	}
 
 	@Override
 	public String newLabel() {
@@ -175,14 +182,14 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void enterProc(Symbol proc) throws YAPLException {
-		// TODO Auto-generated method stub
-
+		System.out.println("CodeGen enterProc" + proc.getName());
+		backend.enterProc(proc.getName(), 0, true);
 	}
 
 	@Override
 	public void exitProc(Symbol proc) throws YAPLException {
-		// TODO Auto-generated method stub
-
+		System.out.println("CodeGen exitProc" + proc.getName());
+		backend.exitProc(proc.getName());
 	}
 
 	@Override
@@ -198,8 +205,9 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void writeString(String string) throws YAPLException {
-		// TODO Auto-generated method stub
-
+		string = string.substring(1, string.length()-1);
+		int addr = backend.allocStringConstant(string);
+		backend.writeString(addr);
 	}
 
 	@Override

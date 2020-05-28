@@ -1,0 +1,4 @@
+YAPL compilation: [test03] ERROR 24 (line 10, column 12)
+illegal operand types for binary operator %
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test03.yapl ...
+op2 yapl.types.BoolType@3aa9e816 % yapl.types.IntType@17d99928

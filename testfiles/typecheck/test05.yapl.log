@@ -1,0 +1,6 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test05.yapl ...
+equalOp yapl.impl.AttribImpl@5d3411d == yapl.impl.AttribImpl@2471cca7
+equalOp yapl.impl.AttribImpl@17d99928 == yapl.impl.AttribImpl@3834d63f
+equalOp yapl.impl.AttribImpl@1ae369b7 != yapl.impl.AttribImpl@6fffcba5
+YAPL compilation: [test05] ERROR 26 (line 10, column 12)
+equalOp failure

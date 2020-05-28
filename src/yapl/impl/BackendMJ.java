@@ -30,6 +30,17 @@ public class BackendMJ implements BackendBinSM {
         currentMethodStack = new Stack<>();
         labelPosition = new HashMap<String, Short>();
         backPatching = new HashMap<String, ArrayList<Integer>>();
+        
+        // add predefined procedures
+        enterProc("writeln", 0, false);
+        int addr = allocStringConstant("\n");
+        writeString(addr);
+        exitProc("writeln_end");
+        
+        enterProc("writeint", 1, false);
+        loadWord(MemoryRegion.STACK, paramOffset(0));
+        writeInteger();
+        exitProc("writeint_end");
     }
 
     @Override
@@ -122,6 +133,8 @@ public class BackendMJ implements BackendBinSM {
 
         IntBuffer temp = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).asIntBuffer();
         data.put(temp);
+        
+        System.out.println("returning position " + position);
 
         return position;
     }
@@ -422,6 +435,7 @@ public class BackendMJ implements BackendBinSM {
      * @param label 	The label for which the back patching needs to be checked
      */
     private void manageLabelPosition(String label) {
+    	System.out.println("manageLabelPosition: " + label + " at pos " + code.position());
         labelPosition.put(label, (short) code.position());
 
         if (backPatching.containsKey(label)) {

@@ -1,0 +1,5 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test36.yapl ...
+op2 yapl.types.IntType@3aa9e816 + yapl.types.IntType@17d99928
+relOp yapl.impl.AttribImpl@3834d63f <= yapl.impl.AttribImpl@1ae369b7
+YAPL compilation: [test36] ERROR 25 (line 10, column 15)
+non-integer operand types for relational operator <=

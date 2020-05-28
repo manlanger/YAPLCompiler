@@ -1,0 +1,3 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test24.yapl ...
+relOp yapl.impl.AttribImpl@5d3411d <= yapl.impl.AttribImpl@2471cca7
+YAPL compilation: [test24] OK

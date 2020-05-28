@@ -1,0 +1,5 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test09.yapl ...
+op2 yapl.types.IntType@17d99928 + yapl.types.IntType@3834d63f
+relOp yapl.impl.AttribImpl@1ae369b7 > yapl.impl.AttribImpl@6fffcba5
+YAPL compilation: [test09] ERROR 21 (line 12, column 18)
+bad array selector yapl.impl.AttribImpl@725bef66

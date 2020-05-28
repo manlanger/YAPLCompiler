@@ -1,0 +1,3 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test07.yapl ...
+YAPL compilation: [test07] ERROR 20 (line 11, column 11)
+expression before [ is not an array type

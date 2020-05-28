@@ -1,0 +1,25 @@
+YaplParser: Reading the file C:\Users\Manuel\Desktop\Uni\Eclipse\YAPLCompiler\testfiles\typecheck\test35.yapl ...
+relOp yapl.impl.AttribImpl@2471cca7 < yapl.impl.AttribImpl@5fe5c6f
+op2 yapl.types.IntType@1ae369b7 + yapl.types.IntType@6fffcba5
+-
+relOp yapl.impl.AttribImpl@6ad5c04e < yapl.impl.AttribImpl@6833ce2c
+op2 yapl.types.IntType@725bef66 + yapl.types.IntType@725bef66
+op2 yapl.types.IntType@725bef66 + yapl.types.IntType@2aaf7cc2
+op2 yapl.types.IntType@725bef66 + yapl.types.IntType@6e3c1e69
+op2 yapl.types.IntType@725bef66 % yapl.types.IntType@1888ff2c
+op2 yapl.types.IntType@725bef66 * yapl.types.IntType@725bef66
+-
+op2 yapl.types.IntType@35851384 + yapl.types.IntType@649d209a
+op2 yapl.types.IntType@35851384 / yapl.types.IntType@6adca536
+relOp yapl.impl.AttribImpl@357246de <= yapl.impl.AttribImpl@28f67ac7
+relOp yapl.impl.AttribImpl@256216b3 < yapl.impl.AttribImpl@2a18f23c
+op2 yapl.types.IntType@d7b1517 + yapl.types.IntType@16c0663d
+relOp yapl.impl.AttribImpl@23223dd8 > yapl.impl.AttribImpl@4ec6a292
+op2 yapl.types.IntType@d7b1517 - yapl.types.IntType@1b40d5f0
+relOp yapl.impl.AttribImpl@ea4a92b <= yapl.impl.AttribImpl@3c5a99da
+op2 yapl.types.IntType@d7b1517 + yapl.types.IntType@47f37ef1
+op2 yapl.types.IntType@d7b1517 - yapl.types.IntType@5a01ccaa
+relOp yapl.impl.AttribImpl@71c7db30 < yapl.impl.AttribImpl@19bb089b
+relOp yapl.impl.AttribImpl@4563e9ab < yapl.impl.AttribImpl@11531931
+op2 yapl.types.IntType@5e025e70 - yapl.types.IntType@1fbc7afb
+YAPL compilation: [test35] OK
