@@ -989,11 +989,9 @@ Attrib Procedure() throws YAPLException :
     }
 
      "(" [ FormalParamList() ] ")" Block(!isVoidReturnType) end_proc = <IDENT>
-
      {
        	codeGen.enterProc(symbol);
      }
-     Block() end_proc = <IDENT>
      {
        	codeGen.exitProc(symbol);
        	if (!start_proc.image.equals(end_proc.image))
