@@ -253,12 +253,19 @@ Attrib Literal() :
 
 Attrib Selector(Attrib a) throws YAPLException:
 {
- 	Token token, dot;
+ 	Token token2, dot;
 	Attrib index = null, attrib = null;
-	Attrib childAttrib;
+	boolean opensRecordScope = false;
+	if(a.getType() instanceof RecordType)
+    {
+        RecordType rType = (RecordType) a.getType();
+         symbolTable.openScope(false);
+         symbolTable.setParentSymbol(rType.getRecordSymbol());
+         opensRecordScope = true;
+    }
 }
 {
-  	( token = "[" index = Expr() "]"
+  	( token2 = "[" index = Expr() "]"
   	{
   	  	try { 
 			codeGen.arrayOffset(a, index);
@@ -268,24 +275,39 @@ Attrib Selector(Attrib a) throws YAPLException:
 		} catch (YAPLException e) {
 		  	throw new YAPLException("expression before " + token.image + " is not an array type", CompilerError.SelectorNotArray, token);
 		}
-  	} | dot = "." token = <IDENT>
+  	} | dot = "." token2 = <IDENT>
   	{
   		if (!(a.getType() instanceof RecordType)) {
   			throw new YAPLException("expression before " + dot.image + " is not a record type", CompilerError.SelectorNotRecord, token);
-  		}
+  		} else
+        {
+            Symbol field = symbolTable.lookup(token2.image);
+             if(field == null)
+             {
+                 throw new YAPLException("invalid field "+ token2.image +" of record Stat", CompilerError.InvalidRecordField, token2);
+             }
+            attrib = new AttribImpl(field.getType());
+        }
   	}
-  	) [ attrib = Selector(attrib)
+  	)
+  	[
+    attrib = Selector(attrib)
   	{
   	  	//attrib = new AttribImpl(Attrib.ArrayElement, a.getType());
   	} ]
   	{
   	  	if (index != null) { 
 	  	  	if (!(index.getType() instanceof IntType)) {
-	  		  	throw new YAPLException("array index or dimension is not an integer type", CompilerError.BadArraySelector, token);
+	  		  	throw new YAPLException("array index or dimension is not an integer type", CompilerError.BadArraySelector, token2);
 	  		}
-	  		
-	  		return attrib;
+
 	  	}
+  	  	if(opensRecordScope)
+        {
+            opensRecordScope = false;
+            symbolTable.closeScope();
+        }
+        return attrib;
   	}
 }
 
@@ -340,6 +362,7 @@ Attrib PrimaryExpr() throws YAPLException:
 {
 	Token token;
 	Attrib attrib = null;
+	boolean opensRecordScope = false;
 }
 {
 	( attrib = Literal() | "(" attrib = Expr() ")" | LOOKAHEAD(2) attrib = ProcedureCall(true)	| token = <IDENT>
@@ -354,9 +377,21 @@ Attrib PrimaryExpr() throws YAPLException:
     	if (symbol.getKind() == Symbol.Procedure) {
     	  	throw new YAPLException("illegal use of procedure " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
+
+    	if(attrib.getType() instanceof RecordType)
+        {
+            symbolTable.openScope(false);
+            symbolTable.setParentSymbol(symbol);
+            opensRecordScope = true;
+        }
   	}
   	[ attrib = Selector(attrib) ] | attrib = ArrayLen() )
   	{
+        if(opensRecordScope)
+        {
+            opensRecordScope = false;
+            symbolTable.closeScope();
+        }
   		return attrib;
   	}
 }
@@ -459,7 +494,8 @@ Attrib CreationExpr() throws YAPLException:
   	Token token;
 }
 {
-  	"new" type = NonArrayType() ( token = "[" index = Expr() "]"
+  	token = "new" type = NonArrayType()
+  	( token = "[" index = Expr() "]"
   	{
   		if (!(index.getType() instanceof IntType)) {
   			throw new YAPLException("bad array selector " + index, CompilerError.BadArraySelector, token);
@@ -468,6 +504,10 @@ Attrib CreationExpr() throws YAPLException:
   	}
   	)*
   	{
+        if(type instanceof IntType || type instanceof BoolType)
+        {
+            throw new YAPLException("invalid type used with 'new'", CompilerError.InvalidNewType, token);
+        }
   	  	attrib = new AttribImpl(Attrib.ArrayElement, type);
   		return attrib;
   	}
@@ -595,6 +635,7 @@ void Assignment() throws YAPLException:
 {
 	Token token2, token3;
 	Attrib attrib, value;
+	boolean recordAssignment = false;
 }
 {
     token2 = < IDENT >
@@ -609,6 +650,13 @@ void Assignment() throws YAPLException:
     	if (symbol.getKind() != Symbol.Variable && symbol.getKind() != Symbol.Parameter) {
     		throw new YAPLException("illegal use of " + symbol.getKindString() + " " + symbol.getName(), CompilerError.SymbolIllegalUse, token2);
     	}
+
+    	if(attrib.getType() instanceof RecordType)
+        {
+            recordAssignment = true;
+            symbolTable.openScope(false);
+            symbolTable.setParentSymbol(symbol);
+        }
     }
     [ attrib = Selector(attrib) ] token3 = ":=" value = Expr()
     {
@@ -617,6 +665,11 @@ void Assignment() throws YAPLException:
      	} catch (YAPLException e) {
      	  	throw new YAPLException(e.getMessage(), e.errorNumber(), token3);
      	}
+     	 if(recordAssignment)
+        {
+            recordAssignment = false;
+            symbolTable.closeScope();
+        }
     }
 }
 
@@ -773,7 +826,7 @@ Type NonArrayType() throws YAPLException:
     		throw new YAPLException("illegal use of constant " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
     	
-    	return new Type();
+    	return attrib.getType();
 	}
 	)
 }
@@ -870,7 +923,7 @@ void TypeDecl() throws YAPLException:
     "Record" token = <IDENT>
     {
     	Symbol symbol = new SymbolImpl(token.image, Symbol.Typename);
-    	type = new RecordType();
+    	type = new RecordType(symbol);
     	symbol.setType(type);
 
       	try { 
@@ -880,6 +933,7 @@ void TypeDecl() throws YAPLException:
     	}
 
     	symbolTable.openScope(false);
+      	symbolTable.setParentSymbol(symbol);
     }
     VarDecl() ( VarDecl() )* "EndRecord"
     {

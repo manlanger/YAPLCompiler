@@ -2,15 +2,20 @@ package yapl.impl;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
 
 import yapl.interfaces.Scope;
 import yapl.interfaces.Symbol;
 import yapl.interfaces.Symboltable;
+import yapl.lib.Type;
 import yapl.lib.YAPLException;
+import yapl.types.RecordType;
 
 public class SymbolTableImpl implements Symboltable {
 
 	private Deque<Scope> scopes = new ArrayDeque<>();
+	private HashMap<Symbol, Scope> recordScopes = new HashMap<>();
 	private boolean isDebugMode = false;
 	private Symbol lastInsertedSymbol;
 	
@@ -38,6 +43,11 @@ public class SymbolTableImpl implements Symboltable {
 		
 		s.setGlobal(currScope.isGlobal());
 		currScope.addSymbol(s);
+		Symbol currentScopeSymbol = currScope.GetParentSymbol();
+		if(s.getKind() == Symbol.Variable && currentScopeSymbol != null && currentScopeSymbol.getType() instanceof RecordType )
+		{
+			s.setKind(Symbol.Field);
+		}
 		
 		scopes.push(currScope);
 		if(lastInsertedSymbol != null)
@@ -76,8 +86,24 @@ public class SymbolTableImpl implements Symboltable {
 	@Override
 	public void setParentSymbol(Symbol sym) {
 		Scope currScope = scopes.pop();
+		Type type = sym.getType();
+		if(sym.getType() instanceof RecordType)
+		{
+			RecordType recordType = (RecordType) type;
+			if(recordScopes.containsKey(recordType.getRecordSymbol()))
+			{
+				scopes.push(recordScopes.get(recordType.getRecordSymbol()));
+				return;
+			}
+		}
+
+
 		
 		currScope.setParentSymbol(sym);
+		if(sym.getType() instanceof RecordType)
+		{
+			recordScopes.put(sym, currScope);
+		}
 		
 		scopes.push(currScope);
 	}
