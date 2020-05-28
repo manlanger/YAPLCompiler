@@ -18,4 +18,12 @@ public class BoolType extends Type {
 	public boolean equals(Object obj) {
 		return obj instanceof BoolType;
 	}
+	
+	public void setValue(boolean value) {
+		this.value = value;
+	}
+	
+	public boolean getValue() {
+		return value;
+	}
 }

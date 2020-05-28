@@ -34,6 +34,8 @@ import yapl.lib.Type;
 import yapl.impl.*;
 import yapl.types.*;
 import java.io.FileOutputStream;
+import java.util.List;
+import java.util.ArrayList;
 
 public class YaplParser
 {
@@ -367,10 +369,16 @@ Attrib PrimaryExpr() throws YAPLException:
 	Attrib attrib = null;
 }
 {
-	( attrib = Literal() | "(" attrib = Expr() ")" | LOOKAHEAD(2) attrib = ProcedureCall(true)	| token = <IDENT>
+	( attrib = Literal()
+	{
+	  return attrib;
+	}
+	| "(" attrib = Expr() ")" | LOOKAHEAD(2) attrib = ProcedureCall(true)	| token = <IDENT>
   	{
   		Symbol symbol = symbolTable.lookup(token.image);
-  		attrib = new AttribImpl(symbol);
+  		if (attrib == null) { 
+  			attrib = new AttribImpl(symbol);
+  		}
   		
     	if (symbol == null) {
     		throw new YAPLException("identifier " + token.image + " not declared", CompilerError.IdentNotDecl, token);
@@ -384,7 +392,6 @@ Attrib PrimaryExpr() throws YAPLException:
   	}
   	[ attrib = Selector(attrib) ] | attrib = ArrayLen() )
   	{
-
   		return attrib;
   	}
 }
@@ -530,11 +537,12 @@ ArgumentList = Expr { "," Expr } .
 ProcedureCall = ident "(" [ ArgumentList ] ")" .
 */
 
-int ArgumentList(Symbol procSymbol) throws YAPLException:
+List<Attrib> ArgumentList(Symbol procSymbol) throws YAPLException:
 {
     Symbol nextSymbol = procSymbol.getNextSymbol();
     Attrib attrib;
     Attrib paraAttrib;
+    List<Attrib> args = new ArrayList<Attrib>();
     int counter = 0;
 }
 {
@@ -547,6 +555,7 @@ int ArgumentList(Symbol procSymbol) throws YAPLException:
         throw new YAPLException(msg, CompilerError.ArgNotApplicable, token);
     }
     paraAttrib = new AttribImpl(nextSymbol.getType());
+    args.add(attrib);
     if(!paraAttrib.getType().equals(attrib.getType()))
     {
          String msg = String.format("argument #%s not applicable to procedure %s", counter, procSymbol.getName());
@@ -563,6 +572,7 @@ int ArgumentList(Symbol procSymbol) throws YAPLException:
             throw new YAPLException(msg, CompilerError.ArgNotApplicable, token);
         }
         paraAttrib = new AttribImpl(nextSymbol.getType());
+        args.add(attrib);
         if(!paraAttrib.getType().equals(attrib.getType()))
             {
                  String msg = String.format("argument #%s not applicable to procedure %s", counter, procSymbol.getName());
@@ -571,7 +581,7 @@ int ArgumentList(Symbol procSymbol) throws YAPLException:
   }
   )*
   {
-    return counter;
+    return args;
   }
 }
 
@@ -581,11 +591,13 @@ Attrib ProcedureCall(boolean isFunction) throws YAPLException:
 	Attrib attrib;
 	int paraCount = 0;
 	int expectedParams = 0;
+	List<Attrib> args = null;
+	Symbol symbol;
 }
 {
   	token = <IDENT>
   	{
-		Symbol symbol = symbolTable.lookup(token.image);
+		symbol = symbolTable.lookup(token.image);
 		attrib = new AttribImpl(symbol.getType());
 
     	if (symbol == null) {
@@ -614,11 +626,18 @@ Attrib ProcedureCall(boolean isFunction) throws YAPLException:
         }
 
 
-  	} "(" [ paraCount = ArgumentList(symbol) ] token = ")"
+  	} "(" [ args = ArgumentList(symbol) ] token = ")"
   	{
-
-  	  	//backend.callProc(token.image);
-
+  	  	if (args != null) { 
+			paraCount = args.size();
+			Attrib[] argsArray = new Attrib[paraCount];
+			argsArray = args.toArray(argsArray);
+  	  		codeGen.callProc(symbol, argsArray);
+		} else {
+		  	paraCount = 0;
+		  	codeGen.callProc(symbol, null);
+		}
+  	 	
   	    if(expectedParams > paraCount)
   	    {
             throw new YAPLException("too few arguments for procedure " + symbol.getName(), CompilerError.TooFewArgs, token);

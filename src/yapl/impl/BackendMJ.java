@@ -41,6 +41,19 @@ public class BackendMJ implements BackendBinSM {
         loadWord(MemoryRegion.STACK, paramOffset(0));
         writeInteger();
         exitProc("writeint_end");
+        
+        enterProc("writebool", 1, false);
+        loadWord(MemoryRegion.STACK, paramOffset(0));
+        int true_addr = allocStringConstant("True");
+		int false_addr = allocStringConstant("False");
+		// if true is on the stack, jump to writebool_true and write string on true_addr
+		branchIf(true, "writebool_true");
+		writeString(false_addr);
+		jump("proc_end");
+		assignLabel("writebool_true");
+		writeString(true_addr);
+		assignLabel("proc_end");
+        exitProc("writebool_end");
     }
 
     @Override
@@ -133,8 +146,6 @@ public class BackendMJ implements BackendBinSM {
 
         IntBuffer temp = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).asIntBuffer();
         data.put(temp);
-        
-        System.out.println("returning position " + position);
 
         return position;
     }
@@ -435,7 +446,6 @@ public class BackendMJ implements BackendBinSM {
      * @param label 	The label for which the back patching needs to be checked
      */
     private void manageLabelPosition(String label) {
-    	System.out.println("manageLabelPosition: " + label + " at pos " + code.position());
         labelPosition.put(label, (short) code.position());
 
         if (backPatching.containsKey(label)) {

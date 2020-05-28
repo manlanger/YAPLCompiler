@@ -200,6 +200,18 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib callProc(Symbol proc, Attrib[] args) throws YAPLException {
+		if (args != null) {
+			for (int i=0; i < args.length; i++) {
+				if (args[i].getType() instanceof IntType) {
+					backend.loadConst(((IntType)args[i].getType()).getValue());
+				} else if (args[i].getType() instanceof BoolType) {
+					backend.loadConst(backend.boolValue(((BoolType)args[i].getType()).getValue()));
+				}
+			}
+		}
+		
+		System.out.println("Calling proc " + proc.getName());
+		backend.callProc(proc.getName());
 		return new AttribImpl(proc.getType());
 	}
 

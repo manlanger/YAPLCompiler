@@ -13,3 +13,4 @@ src/yapl/test/backend/sm/*.txt
 /src/yapl/YaplParser.java
 /src/yapl/YaplParserConstants.java
 /src/yapl/YaplParserTokenManager.java
+src/scanner/YaplScanner.jj

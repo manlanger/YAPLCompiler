@@ -18,4 +18,12 @@ public class IntType extends Type {
 	public boolean equals(Object obj) {
 		return obj instanceof IntType;
 	}
+	
+	public void setValue(int value) {
+		this.value = value;
+	}
+	
+	public int getValue() {
+		return value;
+	}
 }
