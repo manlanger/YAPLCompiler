@@ -63,7 +63,7 @@ public class YaplParser
 	    else {
 	        try {
 	          parser.ReInit(new java.io.FileInputStream(args[0]));
-	          System.out.println ("YaplParser: Reading the file " + args[0] + " ..." );
+	          //System.out.println ("YaplParser: Reading the file " + args[0] + " ..." );
 	        } catch(java.io.FileNotFoundException e) {
 	        	System.out.println ("ExampleParser: The file " + args[0] + " was not found.");
 	        	return;
@@ -79,6 +79,7 @@ public class YaplParser
 		        backend.writeObjectFile(new FileOutputStream(args[1]));
 		    }catch (Throwable e)
 		    {
+		        e.printStackTrace();
                 CompilerMessage.printError((CompilerError) e, programName);
 		    }
 		}
@@ -255,11 +256,19 @@ Attrib Literal() :
 
 Attrib Selector(Attrib a) throws YAPLException:
 {
- 	Token token, dot;
+ 	Token token2, dot;
 	Attrib index = null, attrib = null;
+	boolean opensRecordScope = false;
+	if(a.getType() instanceof RecordType)
+    {
+        RecordType rType = (RecordType) a.getType();
+         symbolTable.openScope(false);
+         symbolTable.setParentSymbol(rType.getRecordSymbol());
+         opensRecordScope = true;
+    }
 }
 {
-  	( token = "[" index = Expr() "]"
+  	( token2 = "[" index = Expr() "]"
   	{
   	  	try { 
 			codeGen.arrayOffset(a, index);
@@ -269,24 +278,39 @@ Attrib Selector(Attrib a) throws YAPLException:
 		} catch (YAPLException e) {
 		  	throw new YAPLException("expression before " + token.image + " is not an array type", CompilerError.SelectorNotArray, token);
 		}
-  	} | dot = "." token = <IDENT>
+  	} | dot = "." token2 = <IDENT>
   	{
   		if (!(a.getType() instanceof RecordType)) {
   			throw new YAPLException("expression before " + dot.image + " is not a record type", CompilerError.SelectorNotRecord, token);
-  		}
+  		} else
+        {
+            Symbol field = symbolTable.lookup(token2.image);
+             if(field == null)
+             {
+                 throw new YAPLException("invalid field "+ token2.image +" of record Stat", CompilerError.InvalidRecordField, token2);
+             }
+            attrib = new AttribImpl(field.getType());
+        }
   	}
-  	) [ attrib = Selector(a)
+  	)
+  	[
+    attrib = Selector(attrib)
   	{
-  	  	attrib = new AttribImpl(Attrib.ArrayElement, a.getType());
+  	  	//attrib = new AttribImpl(Attrib.ArrayElement, a.getType());
   	} ]
   	{
   	  	if (index != null) { 
 	  	  	if (!(index.getType() instanceof IntType)) {
-	  		  	throw new YAPLException("array index or dimension is not an integer type", CompilerError.BadArraySelector, token);
+	  		  	throw new YAPLException("array index or dimension is not an integer type", CompilerError.BadArraySelector, token2);
 	  		}
-	  		
-	  		return attrib;
+
 	  	}
+  	  	if(opensRecordScope)
+        {
+            opensRecordScope = false;
+            symbolTable.closeScope();
+        }
+        return attrib;
   	}
 }
 
@@ -294,6 +318,7 @@ Attrib ArrayLen() throws YAPLException:
 {
 	Token ht, token;
 	Attrib attrib;
+	Attrib childAttrib;
 }
 {
   	ht = "#" token = <IDENT>
@@ -317,10 +342,14 @@ Attrib ArrayLen() throws YAPLException:
     		throw new YAPLException("expression after " + ht.image + " is not an array type", CompilerError.ArrayLenNotArray, token);
     	}
 
-    	return codeGen.arrayLength(attrib);
-  	} [ Selector(attrib) ]
+  	} [ attrib = Selector(attrib) ]
   	{
-  		return attrib;
+        System.out.println("Hello World");
+        if(!(attrib.getType() instanceof ArrayType))
+        {
+            throw new YAPLException("expression after " + ht.image + " is not an array type", CompilerError.ArrayLenNotArray, token);
+        }
+  		return codeGen.arrayLength(attrib);
   	}
 }
 
@@ -350,9 +379,12 @@ Attrib PrimaryExpr() throws YAPLException:
     	if (symbol.getKind() == Symbol.Procedure) {
     	  	throw new YAPLException("illegal use of procedure " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
+
+
   	}
   	[ attrib = Selector(attrib) ] | attrib = ArrayLen() )
   	{
+
   		return attrib;
   	}
 }
@@ -455,15 +487,20 @@ Attrib CreationExpr() throws YAPLException:
   	Token token;
 }
 {
-  	"new" type = NonArrayType() ( token = "[" index = Expr() "]"
+  	token = "new" type = NonArrayType()
+  	( token = "[" index = Expr() "]"
   	{
   		if (!(index.getType() instanceof IntType)) {
   			throw new YAPLException("bad array selector " + index, CompilerError.BadArraySelector, token);
   		}
+  		type = new ArrayType(type);
   	}
   	)*
   	{
-  	  	type = new ArrayType(type);
+        if(type instanceof IntType || type instanceof BoolType)
+        {
+            throw new YAPLException("invalid type used with 'new'", CompilerError.InvalidNewType, token);
+        }
   	  	attrib = new AttribImpl(Attrib.ArrayElement, type);
   		return attrib;
   	}
@@ -493,16 +530,57 @@ ArgumentList = Expr { "," Expr } .
 ProcedureCall = ident "(" [ ArgumentList ] ")" .
 */
 
-void ArgumentList() throws YAPLException:
-{}
+int ArgumentList(Symbol procSymbol) throws YAPLException:
 {
-  Expr() ( "," Expr() )*
+    Symbol nextSymbol = procSymbol.getNextSymbol();
+    Attrib attrib;
+    Attrib paraAttrib;
+    int counter = 0;
+}
+{
+  attrib = Expr()
+  {
+    counter++;
+    if(nextSymbol == null || nextSymbol.getKind() != Symbol.Parameter)
+    {
+    String msg = String.format("argument #%s not applicable to procedure %s", counter, procSymbol.getName());
+        throw new YAPLException(msg, CompilerError.ArgNotApplicable, token);
+    }
+    paraAttrib = new AttribImpl(nextSymbol.getType());
+    if(!paraAttrib.getType().equals(attrib.getType()))
+    {
+         String msg = String.format("argument #%s not applicable to procedure %s", counter, procSymbol.getName());
+        throw new YAPLException(msg, CompilerError.ArgNotApplicable, token);
+    }
+  }
+  ( "," attrib = Expr()
+  {
+    nextSymbol = nextSymbol.getNextSymbol();
+    counter++;
+    if(nextSymbol == null || nextSymbol.getKind() != Symbol.Parameter)
+        {
+        String msg = String.format("argument #%s not applicable to procedure %s", counter, procSymbol.getName());
+            throw new YAPLException(msg, CompilerError.ArgNotApplicable, token);
+        }
+        paraAttrib = new AttribImpl(nextSymbol.getType());
+        if(!paraAttrib.getType().equals(attrib.getType()))
+            {
+                 String msg = String.format("argument #%s not applicable to procedure %s", counter, procSymbol.getName());
+                throw new YAPLException(msg, CompilerError.ArgNotApplicable, token);
+            }
+  }
+  )*
+  {
+    return counter;
+  }
 }
 
 Attrib ProcedureCall(boolean isFunction) throws YAPLException:
 {
 	Token token;
 	Attrib attrib;
+	int paraCount = 0;
+	int expectedParams = 0;
 }
 {
   	token = <IDENT>
@@ -521,38 +599,60 @@ Attrib ProcedureCall(boolean isFunction) throws YAPLException:
     	if (isFunction && (symbol.getType() instanceof VoidType)) {
 		  	throw new YAPLException("using procedure " + symbol.getName() + " (not a function) in expression", CompilerError.ProcNotFuncExpr, token); 
 		}
-  	} "(" [ ArgumentList() ] ")"
+    	paraCount = 0;
+
+    	if(symbol != null)
+        {
+            Symbol nextSymbol = symbol.getNextSymbol();
+
+
+            while(nextSymbol != null && nextSymbol.getKind() == Symbol.Parameter)
+            {
+                nextSymbol = nextSymbol.getNextSymbol();
+                expectedParams++;
+            }
+        }
+
+
+  	} "(" [ paraCount = ArgumentList(symbol) ] token = ")"
   	{
-  	  	backend.callProc(token.image);
+
+  	  	//backend.callProc(token.image);
+
+  	    if(expectedParams > paraCount)
+  	    {
+            throw new YAPLException("too few arguments for procedure " + symbol.getName(), CompilerError.TooFewArgs, token);
+  	    }// too few arguments for procedure <nam
   		return attrib;
   	}
 }
 
 void Assignment() throws YAPLException:
 {
-	Token token;
+	Token token2, token3;
 	Attrib attrib, value;
 }
 {
-    token = < IDENT >
+    token2 = < IDENT >
     {
-    	Symbol symbol = symbolTable.lookup(token.image);
+    	Symbol symbol = symbolTable.lookup(token2.image);
     	attrib = new AttribImpl(symbol);
 
     	if (symbol == null) {
-    		throw new YAPLException("identifier " + token.image + " not declared", CompilerError.IdentNotDecl, token);
+    		throw new YAPLException("identifier " + token2.image + " not declared", CompilerError.IdentNotDecl, token2);
     	}
 
     	if (symbol.getKind() != Symbol.Variable && symbol.getKind() != Symbol.Parameter) {
-    		throw new YAPLException("illegal use of " + symbol.getKindString() + " " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
+    		throw new YAPLException("illegal use of " + symbol.getKindString() + " " + symbol.getName(), CompilerError.SymbolIllegalUse, token2);
     	}
+
     }
-    [ attrib = Selector(attrib) ] ":=" value = Expr()
+    [ attrib = Selector(attrib) ] token3 = ":=" value = Expr()
     {
      	try { 
       		codeGen.assign(attrib, value);
      	} catch (YAPLException e) {
-     	  	throw new YAPLException(e.getMessage(), e.errorNumber(), token);
+     	  	throw new YAPLException(e.getMessage(), e.errorNumber(), token3);
      	}
     }
 }
@@ -587,19 +687,49 @@ void WhileStatement() throws YAPLException:
     "Do" StatementList() "EndWhile"
 }
 
-void ReturnStatement() throws YAPLException:
+boolean ReturnStatement() throws YAPLException:
 {
-	Attrib attrib;
-	Token token;
+	Attrib attrib = null;
+	Token token2;
+	Token token3 = token;
+	Symbol procedure = symbolTable.getNearestParentSymbol(Symbol.Procedure);
+    Attrib procAttrib = null;
+    if(procedure != null)
+    {
+          procAttrib =   new AttribImpl(procedure.getType());
+    }
 }
 {
-    token = "Return" [ attrib = Expr()
+    token2 = "Return" [ attrib = Expr()
     {
-    	if (attrib.getType() instanceof VoidType) {
-    	  	throw new YAPLException("Return value must not be void", CompilerError.IllegalRetValProc, token);
-    	}
+        token3 = token;
+    	if (attrib.getType() instanceof VoidType || procAttrib != null && procAttrib.getType() instanceof VoidType) {
+    	  	throw new YAPLException("Return value must not be void", CompilerError.IllegalRetValProc, token2);
+    	} else if(procAttrib == null && !(attrib.getType() instanceof VoidType))
+        {
+            throw new YAPLException("illegal return value in main program", CompilerError.IllegalRetValMain, token3);
+        }
+
     }
     ]
+    {
+        if(procAttrib != null)
+        {
+            if(attrib != null )
+            {
+                if(!procAttrib.getType().equals(attrib.getType()))
+                {
+                    throw new YAPLException("returning none or invalid type from function " + procedure.getName(), CompilerError.InvalidReturnType, token3);
+                }
+            }else if(!(procAttrib.getType() instanceof VoidType))
+            {
+                throw new YAPLException("returning none or invalid type from function " + procedure.getName(), CompilerError.InvalidReturnType, token);
+            }
+        }
+
+
+        return true;
+    }
 }
 
 void WriteStatement() throws YAPLException:
@@ -613,26 +743,44 @@ void WriteStatement() throws YAPLException:
     }
 }
 
-void Statement() throws YAPLException:
-{}
+boolean Statement() throws YAPLException:
 {
-    IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() | LOOKAHEAD(2) Assignment() |  LOOKAHEAD(2) ProcedureCall(false) | Block()
+    boolean isReturnStatement = false;
+    }
+{
+    (IfStatement() | WhileStatement() | isReturnStatement = ReturnStatement() | WriteStatement() | LOOKAHEAD(2) Assignment() |  LOOKAHEAD(2) ProcedureCall(false) | Block(false))
+    {
+        return isReturnStatement;
+    }
 }
 
-void StatementList() throws YAPLException:
-{}
+boolean StatementList() throws YAPLException:
 {
-    ( Statement() ";" )*
+    boolean lastStatementIsReturnStatement = false;
+    }
+{
+    ( lastStatementIsReturnStatement = Statement() ";" )*
+    {
+        return lastStatementIsReturnStatement;
+    }
 }
 
-void Block() throws YAPLException:
-{}
+void Block(boolean endsWithReturn) throws YAPLException:
+{
+    boolean lastStatementIsReturnStatement = false;
+    }
 {
     {
     	symbolTable.openScope(false);
     }
-    [ Decl() ] "Begin" StatementList() "End"
+    [ Decl() ] "Begin" lastStatementIsReturnStatement = StatementList()
+    "End"
     {
+        if(endsWithReturn && !lastStatementIsReturnStatement)
+        {
+            Symbol procedure = symbolTable.getNearestParentSymbol(Symbol.Procedure);
+            throw new YAPLException("missing Return statement in function " + procedure.getName(), CompilerError.MissingReturn, token);
+        }
     	symbolTable.closeScope();
     }
 }
@@ -667,7 +815,7 @@ Type NonArrayType() throws YAPLException:
     		throw new YAPLException("illegal use of constant " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
     	
-    	return new Type();
+    	return attrib.getType();
 	}
 	)
 }
@@ -764,7 +912,7 @@ void TypeDecl() throws YAPLException:
     "Record" token = <IDENT>
     {
     	Symbol symbol = new SymbolImpl(token.image, Symbol.Typename);
-    	type = new RecordType();
+    	type = new RecordType(symbol);
     	symbol.setType(type);
 
       	try { 
@@ -774,6 +922,7 @@ void TypeDecl() throws YAPLException:
     	}
 
     	symbolTable.openScope(false);
+      	symbolTable.setParentSymbol(symbol);
     }
     VarDecl() ( VarDecl() )* "EndRecord"
     {
@@ -819,6 +968,7 @@ Attrib Procedure() throws YAPLException :
   	Token start_proc;
   	Token end_proc;
   	Symbol symbol;
+  	boolean isVoidReturnType;
 }
 {
     "Procedure" returnType = ReturnType() start_proc = <IDENT>
@@ -826,6 +976,7 @@ Attrib Procedure() throws YAPLException :
     	symbol = new SymbolImpl(start_proc.image, Symbol.Procedure);
 		attrib = new AttribImpl(returnType);
 		symbol.setType(returnType);
+		isVoidReturnType = returnType instanceof VoidType;
     	
     	try { 
     		symbolTable.addSymbol(symbol);
@@ -836,7 +987,9 @@ Attrib Procedure() throws YAPLException :
     	symbolTable.openScope(false);
     	symbolTable.setParentSymbol(symbol);
     }
-     "(" [ FormalParamList() ] ")"
+
+     "(" [ FormalParamList() ] ")" Block(!isVoidReturnType) end_proc = <IDENT>
+
      {
        	codeGen.enterProc(symbol);
      }
@@ -845,7 +998,6 @@ Attrib Procedure() throws YAPLException :
        	codeGen.exitProc(symbol);
        	if (!start_proc.image.equals(end_proc.image))
        		throw new YAPLException("End " + end_proc.image + " does not match Procedure " + start_proc.image, CompilerError.EndIdentMismatch, end_proc);
-       		
      	symbolTable.closeScope();
      } ";"
      {
@@ -869,11 +1021,14 @@ void Program() throws YAPLException:
     }
     (Decl() | Procedure())*
     "Begin"
+
     {
       	codeGen.enterProc(symbol);
     }
-    StatementList()
-    "End" end_prog = <IDENT>
+
+     StatementList()
+     "End" end_prog = <IDENT>
+
     {
     	if (!start_prog.image.equals(end_prog.image))
        		throw new YAPLException("End " + end_prog.image + " does not match Program " + start_prog.image, CompilerError.EndIdentMismatch, end_prog);

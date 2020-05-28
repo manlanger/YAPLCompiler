@@ -35,6 +35,11 @@ public class ScopeImpl implements Scope {
 	}
 
 	@Override
+	public Symbol GetParentSymbol() {
+		return parentSymbol;
+	}
+
+	@Override
 	public boolean hasSymbol(String name) {
 		return symbols.containsKey(name);
 	}

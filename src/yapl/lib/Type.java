@@ -16,7 +16,7 @@ public class Type {
 		if (this instanceof ArrayType && other instanceof ArrayType) {
 			return ((ArrayType)this).getElementType().isCompatibleTo(((ArrayType)other).getElementType());
 		} else {
-			return this.getClass().equals(other.getClass()); 
+			return equals(other);
 		}
 	}
 }

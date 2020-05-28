@@ -13,4 +13,9 @@ public class BoolType extends Type {
 	public BoolType(boolean value) {
 		this.value = value;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof BoolType;
+	}
 }

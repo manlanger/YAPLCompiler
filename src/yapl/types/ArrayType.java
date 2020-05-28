@@ -18,4 +18,13 @@ public class ArrayType extends Type {
 	public int getLength() {
 		return length;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if(obj instanceof ArrayType)
+		{
+			return elementType.equals(((ArrayType) obj).elementType);
+		}
+		return false;
+	}
 }
