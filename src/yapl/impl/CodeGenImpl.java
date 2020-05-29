@@ -4,6 +4,7 @@ import yapl.interfaces.Attrib;
 import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
 import yapl.interfaces.CompilerError;
+import yapl.interfaces.MemoryRegion;
 import yapl.interfaces.Symbol;
 import yapl.lib.YAPLException;
 import yapl.types.ArrayType;
@@ -54,7 +55,12 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void allocVariable(Symbol sym) throws YAPLException {
-		// TODO Auto-generated method stub
+		if (sym.isGlobal()) {
+			int offset = backend.allocStaticData(1);	// int or bool each take 1 byte
+			sym.setOffset(offset);
+		} else {
+			// TODO local vars
+		}
 
 	}
 
@@ -119,7 +125,20 @@ public class CodeGenImpl implements CodeGen {
 		if (!lvalue.getType().isCompatibleTo(expr.getType())) {
 			throw new YAPLException("type mismatch in assignment", CompilerError.TypeMismatchAssign, null);
 		}
-
+		
+		System.out.println("lvalue.isConstant(): " + lvalue.isConstant() + "lvalue.isGlobal" + lvalue.isGlobal());
+		System.out.println("expr.isConstant(): " + expr.isConstant() + "expr.isGlobal" + expr.isGlobal());
+		
+		if (lvalue.isConstant() || lvalue.isGlobal()) {
+			if (expr.getType() instanceof IntType) {
+				backend.loadConst(((IntType)expr.getType()).getValue());
+				backend.storeWord(MemoryRegion.STATIC, lvalue.getOffset());
+			}
+			else if (expr.getType() instanceof BoolType) {
+				backend.loadConst(backend.boolValue(((BoolType)expr.getType()).getValue()));
+				backend.storeWord(MemoryRegion.STATIC, lvalue.getOffset());
+			}
+		}
 	}
 
 	@Override
@@ -203,9 +222,17 @@ public class CodeGenImpl implements CodeGen {
 		if (args != null) {
 			for (int i=0; i < args.length; i++) {
 				if (args[i].getType() instanceof IntType) {
-					backend.loadConst(((IntType)args[i].getType()).getValue());
+					if (args[i].isConstant()) {
+						backend.loadConst(((IntType)args[i].getType()).getValue());
+					} else {
+						backend.loadWord(MemoryRegion.STATIC, args[i].getOffset());
+					}
 				} else if (args[i].getType() instanceof BoolType) {
-					backend.loadConst(backend.boolValue(((BoolType)args[i].getType()).getValue()));
+					if (args[i].isConstant()) {
+						backend.loadConst(backend.boolValue(((BoolType)args[i].getType()).getValue()));
+					} else {
+						backend.loadWord(MemoryRegion.STATIC, args[i].getOffset());
+					}
 				}
 			}
 		}

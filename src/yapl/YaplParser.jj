@@ -792,7 +792,7 @@ void Block(boolean endsWithReturn) throws YAPLException:
     {
     	symbolTable.openScope(false);
     }
-    [ Decl() ] "Begin" lastStatementIsReturnStatement = StatementList()
+    [ Decl(false) ] "Begin" lastStatementIsReturnStatement = StatementList()
     "End"
     {
         if(endsWithReturn && !lastStatementIsReturnStatement)
@@ -867,7 +867,7 @@ Type ReturnType() throws YAPLException:
    	}
 }
 
-void ConstDecl() throws YAPLException:
+void ConstDecl(boolean isGlobal) throws YAPLException:
 {
   	Symbol symbol;
 	Token token;
@@ -887,10 +887,13 @@ void ConstDecl() throws YAPLException:
     "=" attrib = Literal()
     {
     	symbol.setType(attrib.getType());
+    	symbol.setGlobal(isGlobal);
+    	symbol.setKind(Symbol.Constant);
+    	codeGen.allocVariable(symbol);
     } ";"
 }
 
-void VarDecl() throws YAPLException:
+void VarDecl(boolean isGlobal) throws YAPLException:
 {
 	Token token;
 	Symbol symbol;
@@ -901,6 +904,9 @@ void VarDecl() throws YAPLException:
     {
       	symbol = new SymbolImpl(token.image, Symbol.Variable);
       	symbol.setType(type);
+      	symbol.setGlobal(isGlobal);
+      	symbol.setKind(Symbol.Variable);
+    	codeGen.allocVariable(symbol);
 
       	try { 
     		symbolTable.addSymbol(symbol);
@@ -912,6 +918,9 @@ void VarDecl() throws YAPLException:
     {
       	symbol = new SymbolImpl(token.image, Symbol.Variable);
     	symbol.setType(type);
+    	symbol.setGlobal(isGlobal);
+    	symbol.setKind(Symbol.Variable);
+    	codeGen.allocVariable(symbol);
     	
 		try { 
     		symbolTable.addSymbol(symbol);
@@ -943,16 +952,16 @@ void TypeDecl() throws YAPLException:
     	symbolTable.openScope(false);
       	symbolTable.setParentSymbol(symbol);
     }
-    VarDecl() ( VarDecl() )* "EndRecord"
+    VarDecl(false) ( VarDecl(false) )* "EndRecord"
     {
     	symbolTable.closeScope();
     } ";"
 }
 
-void Decl() throws YAPLException:
+void Decl(boolean isGlobal) throws YAPLException:
 {}
 {
-    "Declare" ( ConstDecl() | VarDecl() | TypeDecl() )*
+    "Declare" ( ConstDecl(isGlobal) | VarDecl(isGlobal) | TypeDecl() )*
 }
 
 void FormalParam() throws YAPLException:
@@ -1036,7 +1045,10 @@ void Program() throws YAPLException:
 		symbolTable.openScope(true);
     	symbolTable.setParentSymbol(symbol);
     }
-    (Decl() | Procedure())*
+    (Decl(true)
+    {
+      	
+    } | Procedure())*
     "Begin"
 
     {

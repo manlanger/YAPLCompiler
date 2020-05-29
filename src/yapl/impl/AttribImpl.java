@@ -33,7 +33,9 @@ public class AttribImpl implements Attrib {
 	
 	public AttribImpl(Symbol symbol) {
 		this.type = symbol.getType();
-		
+		this.isConstant = (symbol.getKind() == Symbol.Constant);
+		this.isGlobal = symbol.isGlobal();
+		this.offset = symbol.getOffset();
 	}
 	
 	@Override
