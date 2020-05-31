@@ -18,6 +18,7 @@ import yapl.lib.Type;
 public class CodeGenImpl implements CodeGen {
 	
 	private BackendBinSM backend;
+	private int labelId = 0;
 	
 	public CodeGenImpl(BackendBinSM backend) {
 		this.backend = backend;
@@ -25,8 +26,7 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public String newLabel() {
-		// TODO Auto-generated method stub
-		return null;
+		return "Label" + labelId++;
 	}
 
 	@Override

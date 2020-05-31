@@ -722,15 +722,27 @@ void WhileStatement() throws YAPLException:
 {
 	Attrib attrib;
 	Token token;
+	String loopLabel, endLabel;
 }
 {
-    token = "While" attrib = Expr()
+    token = "While"
     {
+      	loopLabel = codeGen.newLabel();
+	  	codeGen.assignLabel(loopLabel);
+    } attrib = Expr()
+    {
+      	endLabel = codeGen.newLabel();
+		codeGen.branchIfFalse(attrib, endLabel);
+		
     	if (!(attrib.getType() instanceof BoolType)) {
     	  	throw new YAPLException("Condition not boolean expression", CompilerError.CondNotBool, token);
     	}
     }
     "Do" StatementList() "EndWhile"
+    {
+	  	codeGen.jump(loopLabel);
+	  	codeGen.assignLabel(endLabel);
+	}
 }
 
 boolean ReturnStatement() throws YAPLException:
