@@ -357,5 +357,10 @@ public interface CodeGen {
 
 	/** Generate code unconditionally jumping to <code>label</code>. */
 	public void jump(String label);
-
+	
+	public int storeConstant(int value);
+	public int storeConstant(boolean value);
+	public void loadConstant(boolean value);
+	public void loadConstant(int value);
+	public void loadVariable(Symbol symbol);
 }

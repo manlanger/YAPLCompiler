@@ -235,6 +235,7 @@ Attrib Literal() :
 {
 	Token token;
 	Attrib attrib;
+	int offset;
 }
 {
   	<TRUE>
@@ -264,9 +265,9 @@ Attrib Selector(Attrib a) throws YAPLException:
 	if(a.getType() instanceof RecordType)
     {
         RecordType rType = (RecordType) a.getType();
-         symbolTable.openScope(false);
-         symbolTable.setParentSymbol(rType.getRecordSymbol());
-         opensRecordScope = true;
+        symbolTable.openScope(false);
+        symbolTable.setParentSymbol(rType.getRecordSymbol());
+        opensRecordScope = true;
     }
 }
 {
@@ -371,13 +372,28 @@ Attrib PrimaryExpr() throws YAPLException:
 {
 	( attrib = Literal()
 	{
-	  return attrib;
+	  	if (attrib.getType() instanceof IntType) { 
+	  		codeGen.loadConstant(((IntType)attrib.getType()).getValue());
+	  	} else if (attrib.getType() instanceof BoolType) { 
+	  		codeGen.loadConstant(((BoolType)attrib.getType()).getValue());
+	  	}
+	  	return attrib;
 	}
 	| "(" attrib = Expr() ")" | LOOKAHEAD(2) attrib = ProcedureCall(true)	| token = <IDENT>
   	{
   		Symbol symbol = symbolTable.lookup(token.image);
   		if (attrib == null) { 
   			attrib = new AttribImpl(symbol);
+  		}
+
+  		if (symbol.getKind() == Symbol.Constant) {
+  		  	if (attrib.getType() instanceof IntType) { 
+	  			codeGen.loadConstant(((IntType)attrib.getType()).getValue());
+	  		} else if (attrib.getType() instanceof BoolType) { 
+	  			codeGen.loadConstant(((BoolType)attrib.getType()).getValue());	
+	  		}
+  		} else if (symbol.getKind() == Symbol.Variable) {
+  		  	codeGen.loadVariable(symbol);
   		}
   		
     	if (symbol == null) {
@@ -617,7 +633,6 @@ Attrib ProcedureCall(boolean isFunction) throws YAPLException:
         {
             Symbol nextSymbol = symbol.getNextSymbol();
 
-
             while(nextSymbol != null && nextSymbol.getKind() == Symbol.Parameter)
             {
                 nextSymbol = nextSymbol.getNextSymbol();
@@ -680,6 +695,7 @@ void IfStatement() throws YAPLException:
 {
 	Attrib attrib;
 	Token token;
+	String elseLabel, endLabel;
 }
 {
     token = "If" attrib = Expr()
@@ -687,8 +703,19 @@ void IfStatement() throws YAPLException:
     	if (!(attrib.getType() instanceof BoolType)) {
     	  	throw new YAPLException("Condition not boolean expression", CompilerError.CondNotBool, token);
     	}
+
+    	elseLabel = codeGen.newLabel();
+		codeGen.branchIfFalse(attrib, elseLabel);
     	
-    } "Then" StatementList() [ "Else" StatementList() ] "EndIf"
+    } "Then" StatementList()
+    {
+      	endLabel = codeGen.newLabel();
+	  	codeGen.jump(endLabel);
+		codeGen.assignLabel(elseLabel);
+    } [ "Else" StatementList() ] "EndIf"
+    {
+      	codeGen.assignLabel(endLabel);
+    }
 }
 
 void WhileStatement() throws YAPLException:
@@ -889,7 +916,6 @@ void ConstDecl(boolean isGlobal) throws YAPLException:
     	symbol.setType(attrib.getType());
     	symbol.setGlobal(isGlobal);
     	symbol.setKind(Symbol.Constant);
-    	codeGen.allocVariable(symbol);
     } ";"
 }
 

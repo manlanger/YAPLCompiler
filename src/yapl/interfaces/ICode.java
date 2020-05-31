@@ -13,6 +13,11 @@ public interface ICode {
     public static final byte POP = (byte) 0x26;
     public static final byte JMP = (byte) 0x27;
     public static final byte JEQ = (byte) 0x28;
+    public static final byte JNEQ = (byte) 0x29;
+    public static final byte JLT = (byte) 0x2A;
+    public static final byte JLE = (byte) 0x2B;
+    public static final byte JGT = (byte) 0x2C;
+    public static final byte JGE = (byte) 0x2D;    
     public static final byte CALL = (byte) 0x2E;
     public static final byte RETURN = (byte) 0x2F;
     public static final byte ENTER = (byte) 0x30;

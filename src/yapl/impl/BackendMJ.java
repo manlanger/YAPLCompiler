@@ -275,115 +275,78 @@ public class BackendMJ implements BackendBinSM {
     @Override
     public void neg() {
         code.put(ICode.NEG);
-
     }
 
     @Override
     public void add() {
         code.put(ICode.ADD);
-
     }
 
     @Override
     public void sub() {
         code.put(ICode.SUB);
-
     }
 
     @Override
     public void mul() {
         code.put(ICode.MUL);
-
     }
 
     @Override
     public void div() {
        code.put(ICode.DIV);
-
     }
 
     @Override
     public void mod() {
         code.put(ICode.REM);
-
     }
 
     @Override
     public void and() {
-        // TODO Auto-generated method stub
-
+        code.put(ICode.MUL);
     }
 
     @Override
     public void or() {
-        // TODO Auto-generated method stub
-
+        code.put(ICode.ADD);
     }
 
     @Override
     public void isEqual() {
-    	int position = code.position();
-    	
-    	int val1 = code.getInt(position-9);
-    	int val2 = code.getInt(position-4);
-
-    	code.put(ICode.POP);
-    	code.put(ICode.POP);
-    	
-    	loadConst(boolValue(val1 == val2));
+    	HandleComparison(ICode.JEQ);
     }
 
     @Override
     public void isLess() {
-    	int position = code.position();
-    	
-    	int val1 = code.getInt(position-9);
-    	int val2 = code.getInt(position-4);
-
-    	code.put(ICode.POP);
-    	code.put(ICode.POP);
-    	
-    	loadConst(boolValue(val1 < val2));
-
+    	HandleComparison(ICode.JLT);
     }
 
     @Override
     public void isLessOrEqual() {
-    	int position = code.position();
-    	
-    	int val1 = code.getInt(position-9);
-    	int val2 = code.getInt(position-4);
-
-    	code.put(ICode.POP);
-    	code.put(ICode.POP);
-    	
-    	loadConst(boolValue(val1 <= val2));
+    	HandleComparison(ICode.JLE);
     }
 
     @Override
     public void isGreater() {
-    	int position = code.position();
-    	
-    	int val1 = code.getInt(position-9);
-    	int val2 = code.getInt(position-4);
-
-    	code.put(ICode.POP);
-    	code.put(ICode.POP);
-    	
-    	loadConst(boolValue(val1 > val2));
+    	HandleComparison(ICode.JGT);
     }
 
     @Override
     public void isGreaterOrEqual() {
-    	int position = code.position();
-    	
-    	int val1 = code.getInt(position-9);
-    	int val2 = code.getInt(position-4);
-
-    	code.put(ICode.POP);
-    	code.put(ICode.POP);
-    	
-    	loadConst(boolValue(val1 >= val2));
+    	HandleComparison(ICode.JGE);
+    }
+    
+    private void HandleComparison(byte compType) {
+    	code.put(compType);
+    	int iPos =  code.position();
+    	putAddress("trueLabel" + iPos);
+    	loadConst(0);
+    	code.put(ICode.JMP);
+    	putAddress("falseLabel" + iPos);
+    	manageLabelPosition("trueLabel" + iPos);
+    	loadConst(1);
+    	manageLabelPosition("falseLabel" + iPos);
     }
 
     /*
