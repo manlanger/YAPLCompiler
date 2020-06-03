@@ -22,8 +22,8 @@ public class BackendMJ implements BackendBinSM {
     private Stack<Integer> currentMethodStack;
 
     public BackendMJ() {
-        code = ByteBuffer.allocate(400);
-        data = IntBuffer.allocate(100);
+        code = ByteBuffer.allocate(600);
+        data = IntBuffer.allocate(400);
 
         startPC = 0;
         dataSize = 0;
