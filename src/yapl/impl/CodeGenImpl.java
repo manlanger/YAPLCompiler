@@ -56,6 +56,8 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void allocVariable(Symbol sym) throws YAPLException {
+		System.out.println("CodeGen allocating variable " + sym.getName() + " at " + sym.isGlobal());
+		
 		if (sym.isGlobal()) {
 			int offset = backend.allocStaticData(1);	// int or bool each take 1 byte
 			sym.setOffset(offset);
@@ -74,14 +76,14 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void storeArrayDim(int dim, Attrib length) throws YAPLException {
-		// TODO Auto-generated method stub
-
+		backend.storeArrayDim(((IntType)length.getType()).getValue());
 	}
 
 	@Override
 	public Attrib allocArray(ArrayType arrayType) throws YAPLException {
-		// TODO Auto-generated method stub
-		return null;
+		backend.allocArray();
+		Attrib a = new AttribImpl(arrayType);
+		return a;
 	}
 
 	@Override
@@ -111,6 +113,7 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib arrayLength(Attrib arr) throws YAPLException {
+		backend.arrayLength();
 		return new AttribImpl(new IntType());
 	}
 
@@ -128,13 +131,10 @@ public class CodeGenImpl implements CodeGen {
 			throw new YAPLException("type mismatch in assignment", CompilerError.TypeMismatchAssign, null);
 		}
 		
-		if (lvalue.isConstant() || lvalue.isGlobal()) {
-			if (expr.getType() instanceof IntType) {
-				backend.storeWord(MemoryRegion.STATIC, lvalue.getOffset());
-			}
-			else if (expr.getType() instanceof BoolType) {
-				backend.storeWord(MemoryRegion.STATIC, lvalue.getOffset());
-			}
+		if (lvalue.isGlobal()) {
+			backend.storeWord(MemoryRegion.STATIC, lvalue.getOffset());
+		} else {
+			backend.storeWord(MemoryRegion.STACK, lvalue.getOffset());
 		}
 	}
 
@@ -178,8 +178,6 @@ public class CodeGenImpl implements CodeGen {
 			switch (op.image) {
 			case "And":
 				backend.and();
-				//backend.loadConst(backend.boolValue(true));
-				//backend.isEqual();
 				break;
 			case "Or":
 				backend.or();
@@ -246,15 +244,52 @@ public class CodeGenImpl implements CodeGen {
 	}
 
 	@Override
-	public void enterProc(Symbol proc) throws YAPLException {
-		System.out.println("CodeGen enterProc" + proc.getName());
-		backend.enterProc(proc.getName(), 0, true);
+	public void enterProc(Symbol proc) throws YAPLException {		
+		if (proc == null) {
+			backend.enterProc("main", 0, true);
+		} else {
+			System.out.println("CodeGen enterProc: " + proc.getName());
+			int nParam = 0;
+			
+			Symbol next = proc.getNextSymbol();
+			
+			while (next != null) {
+				System.out.println("CodeGen got parameter: " + next.getName() + ", assigning offset: " + nParam);
+
+				next.setOffset(nParam);
+				nParam++;
+				
+				if (next.getKind() == Symbol.Constant) {
+					if (next.getType() instanceof IntType || next.getType() instanceof BoolType) {
+						int iValue;
+						
+						if (next.getType() instanceof IntType) {
+							iValue = ((IntType)next.getType()).getValue();
+						} else {
+							iValue = backend.boolValue(((BoolType)next.getType()).getValue());
+						}
+						
+						backend.loadConst(iValue);
+					}
+				} else if (next.getKind() == Symbol.Variable || next.getKind() == Symbol.Parameter) {
+					loadVariable(next);
+				}
+				
+				next = next.getNextSymbol();
+			}
+			
+			backend.enterProc(proc.getName(), nParam, false);
+		}
 	}
 
 	@Override
-	public void exitProc(Symbol proc) throws YAPLException {
-		System.out.println("CodeGen exitProc" + proc.getName());
-		backend.exitProc(proc.getName());
+	public void exitProc(Symbol proc) throws YAPLException {		
+		if (proc == null) {
+			backend.exitProc("main");
+		} else {
+			System.out.println("CodeGen exitProc: " + proc.getName());
+			backend.exitProc(proc.getName());
+		} 
 	}
 
 	@Override
@@ -265,25 +300,6 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib callProc(Symbol proc, Attrib[] args) throws YAPLException {
-		/*if (args != null) {
-			for (int i=0; i < args.length; i++) {
-				if (args[i].getType() instanceof IntType) {
-					if (!args[i].isConstant()) {
-						//backend.loadConst(((IntType)args[i].getType()).getValue());
-					//} else {
-						backend.loadWord(MemoryRegion.STATIC, args[i].getOffset());
-					}
-				} else if (args[i].getType() instanceof BoolType) {
-					if (!args[i].isConstant()) {
-						//backend.loadConst(backend.boolValue(((BoolType)args[i].getType()).getValue()));
-					//} else {
-						backend.loadWord(MemoryRegion.STATIC, args[i].getOffset());
-					}
-				}
-			}
-		}*/
-		
-		System.out.println("Calling proc " + proc.getName());
 		backend.callProc(proc.getName());
 		return new AttribImpl(proc.getType());
 	}
@@ -308,6 +324,7 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void loadConstant(int value) {
+		System.out.println("CodeGen loading int constant: " + value);
 		backend.loadConst(value);
 	}
 	
@@ -325,17 +342,18 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void loadConstant(boolean value) {
+		System.out.println("CodeGen loading bool constant: " + value);
 		backend.loadConst(backend.boolValue(value));
 	}
 
 	@Override
 	public void loadVariable(Symbol symbol) {
+		System.out.println("CodeGen loading " + (symbol.isGlobal()?"global ":"local ") + "variable " + symbol.getName() + " with offset " + symbol.getOffset());
+		
 		if (symbol.isGlobal()) {
 			backend.loadWord(MemoryRegion.STATIC, symbol.getOffset());
 		} else {
 			backend.loadWord(MemoryRegion.STACK, symbol.getOffset());
 		}
-		
 	}
-
 }

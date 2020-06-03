@@ -35,12 +35,12 @@ public class BackendMJ implements BackendBinSM {
         enterProc("writeln", 0, false);
         int addr = allocStringConstant("\n");
         writeString(addr);
-        exitProc("writeln_end");
+        exitProc("writeln");
         
         enterProc("writeint", 1, false);
         loadWord(MemoryRegion.STACK, paramOffset(0));
         writeInteger();
-        exitProc("writeint_end");
+        exitProc("writeint");
         
         enterProc("writebool", 1, false);
         loadWord(MemoryRegion.STACK, paramOffset(0));
@@ -53,7 +53,7 @@ public class BackendMJ implements BackendBinSM {
 		assignLabel("writebool_true");
 		writeString(true_addr);
 		assignLabel("proc_end");
-        exitProc("writebool_end");
+        exitProc("writebool");
     }
 
     @Override
@@ -398,6 +398,8 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public void callProc(String label) {
+    	System.out.println("Backend callProc: " + label);
+    	
         code.put(ICode.CALL);
 
         putAddress(label);
@@ -408,8 +410,12 @@ public class BackendMJ implements BackendBinSM {
      * If true, performs back patching and removes label from back patching list.
      * @param label 	The label for which the back patching needs to be checked
      */
-    private void manageLabelPosition(String label) {
-        labelPosition.put(label, (short) code.position());
+    private void manageLabelPosition(String label) {    	
+        if (!labelPosition.containsKey(label)) {
+        	short pos = (short)code.position();
+        	labelPosition.put(label, pos);
+        	System.out.println("Backend stored label " + label + " at " + pos);
+        }
 
         if (backPatching.containsKey(label)) {
 
@@ -441,6 +447,7 @@ public class BackendMJ implements BackendBinSM {
 
         code.put(ICode.ENTER);
         code.put(params.byteValue());    // nparams
+        params += 30;
         code.put(params.byteValue()); // framesize
     }
 
@@ -454,8 +461,7 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public int paramOffset(int index) {
-        int position = currentMethodStack.peek();
-        return index;
+       return index;
     }
 
 }
