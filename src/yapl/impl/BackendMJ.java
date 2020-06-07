@@ -20,6 +20,8 @@ public class BackendMJ implements BackendBinSM {
     private Map<String, Short> labelPosition;
     private Map<String, ArrayList<Integer>> backPatching;
     private Stack<Integer> currentMethodStack;
+    private int backPatchPos = 0;
+    private int numberWords = 0;
 
     public BackendMJ() {
         code = ByteBuffer.allocate(600);
@@ -160,6 +162,8 @@ public class BackendMJ implements BackendBinSM {
             code.put(ICode.STORE);
             code.put(currentPs.byteValue());
         }
+        
+        this.numberWords += words;
         currentMethodStack.set(0, position + words);
         return position;
     }
@@ -447,13 +451,26 @@ public class BackendMJ implements BackendBinSM {
 
         code.put(ICode.ENTER);
         code.put(params.byteValue());    // nparams
-        params += 30;
-        code.put(params.byteValue()); // framesize
+        
+        backPatchPos = code.position();	// remember position for backpatching framesize later 
+        numberWords = nParams;	// numberWords = numberParams + numberLocals (backpatched later)
+        
+        code.put((byte)nParams);    // framesize - temporary nParams, will be backpatched after exitProc
     }
 
     @Override
     public void exitProc(String label) {
         manageLabelPosition(label + "_end");
+        
+        System.out.println("Number of words (will be backpatched to pos " + backPatchPos + "): " + this.numberWords);
+        
+        int backupPos = code.position();	// remember current pos
+        
+        code.position(backPatchPos);		// jump to position of framesize
+        code.put((byte)numberWords);		// and put correct number of words there
+        
+        code.position(backupPos);			// jump back to backuped position
+        
         currentMethodStack.pop();
         code.put(ICode.EXIT);
         code.put(ICode.RETURN);
