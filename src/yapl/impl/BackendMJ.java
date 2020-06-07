@@ -453,7 +453,7 @@ public class BackendMJ implements BackendBinSM {
 
     @Override
     public void exitProc(String label) {
-        manageLabelPosition(label);
+        manageLabelPosition(label + "_end");
         currentMethodStack.pop();
         code.put(ICode.EXIT);
         code.put(ICode.RETURN);

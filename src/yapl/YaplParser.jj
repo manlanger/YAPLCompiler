@@ -347,7 +347,6 @@ Attrib ArrayLen() throws YAPLException:
 
   	} [ attrib = Selector(attrib) ]
   	{
-        System.out.println("Hello World");
         if(!(attrib.getType() instanceof ArrayType))
         {
             throw new YAPLException("expression after " + ht.image + " is not an array type", CompilerError.ArrayLenNotArray, token);
@@ -798,6 +797,8 @@ boolean ReturnStatement() throws YAPLException:
             }
         }
 
+		procedure.setReturnSeen(true);
+		codeGen.returnFromProc(procedure, attrib);
 
         return true;
     }

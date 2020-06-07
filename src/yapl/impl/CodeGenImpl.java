@@ -94,8 +94,7 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void setParamOffset(Symbol sym, int pos) {
-		// TODO Auto-generated method stub
-
+		sym.setOffset(pos);
 	}
 
 	@Override
@@ -294,8 +293,7 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public void returnFromProc(Symbol proc, Attrib returnVal) throws YAPLException {
-		// TODO Auto-generated method stub
-
+		backend.jump(proc.getName()+"_end");
 	}
 
 	@Override
