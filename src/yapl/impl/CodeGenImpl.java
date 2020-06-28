@@ -19,7 +19,7 @@ public class CodeGenImpl implements CodeGen {
 	
 	private BackendBinSM backend;
 	private int labelId = 0;
-	
+
 	public CodeGenImpl(BackendBinSM backend) {
 		this.backend = backend;
 	}
@@ -112,6 +112,8 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib arrayLength(Attrib arr) throws YAPLException {
+		System.out.println("Codegen ArrayLength");
+
 		backend.arrayLength();
 		return new AttribImpl(new IntType());
 	}
@@ -121,20 +123,46 @@ public class CodeGenImpl implements CodeGen {
 		if (lvalue.isConstant()) {
 			throw new YAPLException("l-value is read-only", CompilerError.ReadonlyAssign, null);
 		}
-		
-		if (expr.getType() instanceof VoidType) {
-			throw new YAPLException("using procedure proc (not a function) in expression", CompilerError.ProcNotFuncExpr, null);
-		}
-		
-		if (!lvalue.getType().isCompatibleTo(expr.getType())) {
-			throw new YAPLException("type mismatch in assignment", CompilerError.TypeMismatchAssign, null);
-		}
+		checkTypeAssignment(lvalue.getType(),expr.getType());
+
+		//TODO Check Array
 		
 		if (lvalue.isGlobal()) {
 			backend.storeWord(MemoryRegion.STATIC, lvalue.getOffset());
 		} else {
 			backend.storeWord(MemoryRegion.STACK, lvalue.getOffset());
 		}
+	}
+
+	private void checkTypeAssignment(Type lvalueType, Type exprType) throws YAPLException
+	{
+		if (exprType instanceof VoidType) {
+			throw new YAPLException("using procedure proc (not a function) in expression", CompilerError.ProcNotFuncExpr, null);
+		}
+
+		if (!lvalueType.isCompatibleTo(exprType)) {
+			throw new YAPLException("type mismatch in assignment", CompilerError.TypeMismatchAssign, null);
+		}
+	}
+
+	@Override
+	public void setArrayElement(Attrib array, Attrib expr) throws YAPLException{
+		if (!(array.getType() instanceof ArrayType)) {
+			throw new YAPLException(YAPLException.Internal);
+		}
+		ArrayType arr = (ArrayType) (array.getType());
+
+		checkTypeAssignment(arr.getElementType(),expr.getType());
+		backend.storeArrayElement();
+
+	}
+
+	@Override
+	public void loadArrayVariable(Attrib array) throws YAPLException {
+		if (!(array.getType() instanceof ArrayType)) {
+			throw new YAPLException(YAPLException.Internal);
+		}
+		backend.loadArrayElement();
 	}
 
 	@Override
@@ -271,7 +299,7 @@ public class CodeGenImpl implements CodeGen {
 						backend.loadConst(iValue);
 					}
 				} else if (next.getKind() == Symbol.Variable || next.getKind() == Symbol.Parameter) {
-					loadVariable(next);
+					loadVariable(next, false);
 				}
 				
 				next = next.getNextSymbol();
@@ -345,7 +373,7 @@ public class CodeGenImpl implements CodeGen {
 	}
 
 	@Override
-	public void loadVariable(Symbol symbol) {
+	public void loadVariable(Symbol symbol, boolean assign) {
 		System.out.println("CodeGen loading " + (symbol.isGlobal()?"global ":"local ") + "variable " + symbol.getName() + " with offset " + symbol.getOffset());
 		
 		if (symbol.isGlobal()) {
@@ -354,4 +382,17 @@ public class CodeGenImpl implements CodeGen {
 			backend.loadWord(MemoryRegion.STACK, symbol.getOffset());
 		}
 	}
+
+	@Override
+	public void loadVariable(Attrib attrib, boolean assign) {
+		System.out.println("CodeGen loading " + (attrib.isGlobal()?"global ":"local ") + " with offset " + attrib.getOffset());
+
+		if (attrib.isGlobal()) {
+			backend.loadWord(MemoryRegion.STATIC, attrib.getOffset());
+		} else {
+			backend.loadWord(MemoryRegion.STACK, attrib.getOffset());
+		}
+	}
+
+
 }

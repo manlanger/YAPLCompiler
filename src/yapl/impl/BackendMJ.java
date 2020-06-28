@@ -24,7 +24,7 @@ public class BackendMJ implements BackendBinSM {
     private int numberWords = 0;
 
     public BackendMJ() {
-        code = ByteBuffer.allocate(600);
+        code = ByteBuffer.allocate(800);
         data = IntBuffer.allocate(400);
 
         startPC = 0;

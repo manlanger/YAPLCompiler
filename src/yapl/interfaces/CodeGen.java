@@ -362,5 +362,8 @@ public interface CodeGen {
 	public int storeConstant(boolean value);
 	public void loadConstant(boolean value);
 	public void loadConstant(int value);
-	public void loadVariable(Symbol symbol);
+	public void loadVariable(Symbol symbol, boolean assign);
+	public void loadVariable(Attrib attrib, boolean assign);
+	public void setArrayElement(Attrib array, Attrib value) throws YAPLException;
+	public void loadArrayVariable(Attrib array) throws YAPLException;
 }
