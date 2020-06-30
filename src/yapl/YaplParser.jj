@@ -268,9 +268,10 @@ Attrib Selector(Attrib a) throws YAPLException:
         symbolTable.openScope(false);
         symbolTable.setParentSymbol(rType.getRecordSymbol());
         opensRecordScope = true;
+        codeGen.loadVariable(a);
     }else if(a.getType() instanceof ArrayType)
     {
-        codeGen.loadVariable(a, false);
+        codeGen.loadVariable(a);
     }
 }
 {
@@ -295,7 +296,8 @@ Attrib Selector(Attrib a) throws YAPLException:
              {
                  throw new YAPLException("invalid field "+ token2.image +" of record Stat", CompilerError.InvalidRecordField, token2);
              }
-            attrib = new AttribImpl(field.getType());
+             attrib = new AttribImpl(field);
+             attrib.setKind(Attrib.RecordField);
         }
   	}
   	)
@@ -344,9 +346,7 @@ Attrib ArrayLen() throws YAPLException:
     	  	throw new YAPLException("illegal use of procedure " + symbol.getName(), CompilerError.SymbolIllegalUse, token);
     	}
 
-    	if (!(symbol.getType() instanceof ArrayType)) {
-    		throw new YAPLException("expression after " + ht.image + " is not an array type", CompilerError.ArrayLenNotArray, token);
-    	}
+
 
   	} [ attrib = Selector(attrib) ]
   	{
@@ -354,7 +354,7 @@ Attrib ArrayLen() throws YAPLException:
         {
             throw new YAPLException("expression after " + ht.image + " is not an array type", CompilerError.ArrayLenNotArray, token);
         }
-        codeGen.loadVariable(symbol, false);
+        codeGen.loadVariable(attrib);
   		return codeGen.arrayLength(attrib);
   	}
 }
@@ -416,11 +416,14 @@ Attrib PrimaryExpr() throws YAPLException:
                     codeGen.loadConstant(((BoolType)attrib.getType()).getValue());
                 }
             } else if (symbol.getKind() == Symbol.Variable || symbol.getKind() == Symbol.Parameter) {
-                codeGen.loadVariable(symbol,false);
+                codeGen.loadVariable(symbol);
             }
         }else if(attrib.getType() instanceof ArrayType)
         {
             codeGen.loadArrayVariable(attrib);
+        }else if(attrib.getType() instanceof RecordType)
+        {
+            codeGen.loadVariable(selectorAttrib);
         }
 
     }
@@ -534,6 +537,7 @@ Attrib CreationExpr() throws YAPLException:
   	Attrib index, attrib;
   	Type type;
   	Token token;
+  	int dimension = 0;
 }
 {
   	token = "new" type = NonArrayType()
@@ -543,8 +547,9 @@ Attrib CreationExpr() throws YAPLException:
   			throw new YAPLException("bad array selector " + index, CompilerError.BadArraySelector, token);
   		}
   		type = new ArrayType(type);
-		codeGen.storeArrayDim(0, index);
+		codeGen.storeArrayDim(dimension, index);
   		codeGen.allocArray((ArrayType)type);
+  		dimension++;
   	}
   	)*
   	{
@@ -552,7 +557,13 @@ Attrib CreationExpr() throws YAPLException:
         {
             throw new YAPLException("invalid type used with 'new'", CompilerError.InvalidNewType, token);
         }
-  	  	attrib = new AttribImpl(Attrib.ArrayElement, type);
+        if(type instanceof ArrayType)
+  	  	    attrib = new AttribImpl(Attrib.ArrayElement, type);
+        else {
+            attrib = new AttribImpl(Attrib.RecordField, type);
+            codeGen.allocRecord((RecordType) type);
+        }
+
   		return attrib;
   	}
 }
@@ -713,22 +724,10 @@ void Assignment() throws YAPLException:
     	}
 
     }
-    [ selectorAttrib = Selector(attrib) ] token3 = ":=" value = Expr()
+    [ attrib = Selector(attrib) ] token3 = ":=" value = Expr()
     {
      	try {
-     	    if(selectorAttrib == null)
-            {
-                codeGen.assign(attrib, value);
-            }
-     	    else if(attrib.getType() instanceof ArrayType)
-            {
-                System.out.println("Assigment, Codegen: set array Element: " + token2.image.toString());
-
-                codeGen.setArrayElement(attrib, value);
-            } else if(attrib.getType() instanceof RecordType)
-            {
-
-            }
+     	    codeGen.assign(attrib, value);
 
      	} catch (YAPLException e) {
      	  	throw new YAPLException(e.getMessage(), e.errorNumber(), token3);
@@ -989,11 +988,21 @@ void VarDecl(boolean isGlobal) throws YAPLException:
     type = Type() token = <IDENT>
     {
       	symbol = new SymbolImpl(token.image, Symbol.Variable);
+      	Symbol parent = symbolTable.getNearestParentSymbol(Symbol.Typename);
       	symbol.setType(type);
       	symbol.setGlobal(isGlobal);
-      	System.out.println("VarDecl, Symbol " + symbol.getName() + " is a Variable.");
-      	symbol.setKind(Symbol.Variable);
-    	codeGen.allocVariable(symbol);
+
+
+      	if(parent == null)
+        {
+             System.out.println("VarDecl, Symbol " + symbol.getName() + " is a Variable.");
+             symbol.setKind(Symbol.Variable);
+             codeGen.allocVariable(symbol);
+        } else
+        {
+            symbol.setKind(Symbol.Field);
+        }
+
 
       	try {
     		symbolTable.addSymbol(symbol);
@@ -1004,11 +1013,18 @@ void VarDecl(boolean isGlobal) throws YAPLException:
     ( "," token = <IDENT>
     {
       	symbol = new SymbolImpl(token.image, Symbol.Variable);
+      	parent = symbolTable.getNearestParentSymbol(Symbol.Typename);
     	symbol.setType(type);
     	symbol.setGlobal(isGlobal);
-    	System.out.println("VarDecl, Symbol " + symbol.getName() + " is a Variable.");
-    	symbol.setKind(Symbol.Variable);
-    	codeGen.allocVariable(symbol);
+    	if(parent == null)
+        {
+             System.out.println("VarDecl, Symbol " + symbol.getName() + " is a Variable.");
+             symbol.setKind(Symbol.Variable);
+             codeGen.allocVariable(symbol);
+        } else
+        {
+            symbol.setKind(Symbol.Field);
+        }
     	
 		try { 
     		symbolTable.addSymbol(symbol);
@@ -1023,11 +1039,12 @@ void TypeDecl() throws YAPLException:
 {
 	Token token;
 	Type type;
+	Symbol symbol = null;
 }
 {
     "Record" token = <IDENT>
     {
-    	Symbol symbol = new SymbolImpl(token.image, Symbol.Typename);
+    	symbol = new SymbolImpl(token.image, Symbol.Typename);
     	type = new RecordType(symbol);
     	symbol.setType(type);
 
@@ -1042,6 +1059,13 @@ void TypeDecl() throws YAPLException:
     }
     VarDecl(false) ( VarDecl(false) )* "EndRecord"
     {
+        int offset = 0;
+        Symbol next = symbol.getNextSymbol();
+        do {
+                next.setOffset(offset);
+                next = next.getNextSymbol();
+                offset++;
+        }while(next != null && next.getKind() == Symbol.Field);
     	symbolTable.closeScope();
     } ";"
 }

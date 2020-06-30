@@ -88,8 +88,25 @@ public class CodeGenImpl implements CodeGen {
 
 	@Override
 	public Attrib allocRecord(RecordType recordType) throws YAPLException {
+		int heapSize = 0;
+		Symbol nextSymbol = recordType.getRecordSymbol();
+		do {
+			nextSymbol = nextSymbol.getNextSymbol();
+			if(nextSymbol != null && nextSymbol.getKind() == Symbol.Field)
+			{
+				nextSymbol.setOffset(heapSize);
+				heapSize++;
+			}else
+			{
+				nextSymbol = null;
+			}
+
+		}while (nextSymbol != null);
+		backend.allocHeap(heapSize);
+		Attrib a = new AttribImpl(recordType);
+		a.setKind(Attrib.RegAddress);
 		// TODO Auto-generated method stub
-		return null;
+		return a;
 	}
 
 	@Override
@@ -107,7 +124,6 @@ public class CodeGenImpl implements CodeGen {
 	@Override
 	public void recordOffset(Attrib record, Symbol field) throws YAPLException {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -126,12 +142,21 @@ public class CodeGenImpl implements CodeGen {
 		checkTypeAssignment(lvalue.getType(),expr.getType());
 
 		//TODO Check Array
-		
-		if (lvalue.isGlobal()) {
-			backend.storeWord(MemoryRegion.STATIC, lvalue.getOffset());
-		} else {
-			backend.storeWord(MemoryRegion.STACK, lvalue.getOffset());
+		if(lvalue.getKind() == Attrib.ArrayElement)
+		{
+			backend.storeArrayElement();
+			return;
 		}
+		MemoryRegion region = MemoryRegion.STACK;
+		if(lvalue.isGlobal())
+		{
+			region = MemoryRegion.STATIC;
+		}
+		if(lvalue.getKind() == Attrib.RecordField)
+		{
+			region = MemoryRegion.HEAP;
+		}
+		backend.storeWord(region, lvalue.getOffset());
 	}
 
 	private void checkTypeAssignment(Type lvalueType, Type exprType) throws YAPLException
@@ -146,13 +171,9 @@ public class CodeGenImpl implements CodeGen {
 	}
 
 	@Override
-	public void setArrayElement(Attrib array, Attrib expr) throws YAPLException{
-		if (!(array.getType() instanceof ArrayType)) {
-			throw new YAPLException(YAPLException.Internal);
-		}
-		ArrayType arr = (ArrayType) (array.getType());
+	public void setArrayElement(Attrib selectorAttrib, Attrib expr) throws YAPLException{
 
-		checkTypeAssignment(arr.getElementType(),expr.getType());
+		checkTypeAssignment(selectorAttrib.getType(),expr.getType());
 		backend.storeArrayElement();
 
 	}
@@ -299,7 +320,7 @@ public class CodeGenImpl implements CodeGen {
 						backend.loadConst(iValue);
 					}
 				} else if (next.getKind() == Symbol.Variable || next.getKind() == Symbol.Parameter) {
-					loadVariable(next, false);
+					loadVariable(next);
 				}
 				
 				next = next.getNextSymbol();
@@ -373,7 +394,7 @@ public class CodeGenImpl implements CodeGen {
 	}
 
 	@Override
-	public void loadVariable(Symbol symbol, boolean assign) {
+	public void loadVariable(Symbol symbol) {
 		System.out.println("CodeGen loading " + (symbol.isGlobal()?"global ":"local ") + "variable " + symbol.getName() + " with offset " + symbol.getOffset());
 		
 		if (symbol.isGlobal()) {
@@ -384,14 +405,19 @@ public class CodeGenImpl implements CodeGen {
 	}
 
 	@Override
-	public void loadVariable(Attrib attrib, boolean assign) {
+	public void loadVariable(Attrib attrib) {
 		System.out.println("CodeGen loading " + (attrib.isGlobal()?"global ":"local ") + " with offset " + attrib.getOffset());
 
-		if (attrib.isGlobal()) {
-			backend.loadWord(MemoryRegion.STATIC, attrib.getOffset());
-		} else {
-			backend.loadWord(MemoryRegion.STACK, attrib.getOffset());
+		MemoryRegion region = MemoryRegion.STACK;
+		if(attrib.isGlobal())
+		{
+			region = MemoryRegion.STATIC;
 		}
+		if(attrib.getKind() == Attrib.RecordField)
+		{
+			region = MemoryRegion.HEAP;
+		}
+		backend.loadWord(region, attrib.getOffset());
 	}
 
 

@@ -87,7 +87,7 @@ public class SymbolTableImpl implements Symboltable {
 	public void setParentSymbol(Symbol sym) {
 		Scope currScope = scopes.pop();
 		Type type = sym.getType();
-		if(sym.getType() instanceof RecordType)
+		if(sym.getType() instanceof RecordType && sym.getKind() != Symbol.Procedure)
 		{
 			RecordType recordType = (RecordType) type;
 			if(recordScopes.containsKey(recordType.getRecordSymbol()))

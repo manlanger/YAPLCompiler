@@ -22,6 +22,7 @@ public class BackendMJ implements BackendBinSM {
     private Stack<Integer> currentMethodStack;
     private int backPatchPos = 0;
     private int numberWords = 0;
+    private List<Integer> arrayDimDescriptor;
 
     public BackendMJ() {
         code = ByteBuffer.allocate(800);
@@ -32,7 +33,7 @@ public class BackendMJ implements BackendBinSM {
         currentMethodStack = new Stack<>();
         labelPosition = new HashMap<String, Short>();
         backPatching = new HashMap<String, ArrayList<Integer>>();
-        
+        arrayDimDescriptor = new ArrayList<>();
         // add predefined procedures
         enterProc("writeln", 0, false);
         int addr = allocStringConstant("\n");
@@ -179,7 +180,7 @@ public class BackendMJ implements BackendBinSM {
     @Override
     public void storeArrayDim(int dim) {
         // TODO storeArrayDim: For multi dimensional array only ignore for CA1
-
+        arrayDimDescriptor.add(dim);
     }
 
     @Override
@@ -188,7 +189,7 @@ public class BackendMJ implements BackendBinSM {
         // Allocated Word Array as default
         code.put(ICode.ONE);
         // TODO Auto-gallocStringConstantenerated method stub
-
+        //arrayDimDescriptor.clear();
     }
 
     @Override
